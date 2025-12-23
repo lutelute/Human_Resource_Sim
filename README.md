@@ -2,12 +2,12 @@
 
 **Human Capital Development Optimization Game**
 
-[![GitHub Pages](https://img.shields.io/badge/demo-live-green.svg)](https://shigenoburyuto.github.io/Human_Resource_Sim/)
+[![GitHub Pages](https://img.shields.io/badge/demo-live-green.svg)](https://lutelute.github.io/Human_Resource_Sim/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## 🚀 ライブデモ
 
-**[📊 シミュレーターを試す →](https://shigenoburyuto.github.io/Human_Resource_Sim/)**
+**[📊 シミュレーターを試す →](https://lutelute.github.io/Human_Resource_Sim/)**
 
 ---
 
@@ -116,7 +116,7 @@ $$\max_{\mathbf{u}} \sum_{t=0}^{T} \gamma^t \left[ \text{Score}(t) + \lambda \cd
 ## 🎮 使い方
 
 ### オンライン版（推奨）
-1. [デモサイト](https://shigenoburyuto.github.io/Human_Resource_Sim/)にアクセス
+1. [デモサイト](https://lutelute.github.io/Human_Resource_Sim/)にアクセス
 2. 使用したいバージョンを選択
 3. 投資配分スライダーを調整
 4. 「1年進める」または「自動実行」をクリック
@@ -124,7 +124,7 @@ $$\max_{\mathbf{u}} \sum_{t=0}^{T} \gamma^t \left[ \text{Score}(t) + \lambda \cd
 
 ### ローカル実行
 ```bash
-git clone https://github.com/shigenoburyuto/Human_Resource_Sim.git
+git clone https://github.com/lutelute/Human_Resource_Sim.git
 cd Human_Resource_Sim
 # Webサーバーを起動してindex.htmlを開く
 python -m http.server 8000
