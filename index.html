@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>国家人材育成シミュレーター</title>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 40px;
+        }
+        
+        .version-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .version-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        .version-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .version-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .version-description {
+            color: #5a6c7d;
+            margin-bottom: 20px;
+        }
+        
+        .demo-button {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+        
+        .demo-button:hover {
+            background: #2980b9;
+        }
+        
+        .features {
+            background: #f1f2f6;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .feature-emoji {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌏 国家人材育成シミュレーター</h1>
+        <p class="subtitle">Human Capital Development Optimization Game</p>
+        
+        <p style="text-align: center; font-size: 1.1em; margin-bottom: 40px;">
+            限られた資源（予算・時間・人材）の中で、国力を最大化する人材育成戦略を探索するシミュレーションゲーム
+        </p>
+        
+        <div class="version-grid">
+            <div class="version-card">
+                <div class="version-title">Version 1: 基本設計</div>
+                <div class="version-description">
+                    概念設計・数理モデル構築<br>
+                    12軸レーダーチャート、CES型国力集約関数
+                </div>
+                <a href="v1/index.html" class="demo-button">デモを開く</a>
+            </div>
+            
+            <div class="version-card">
+                <div class="version-title">Version 2: 個人モデル</div>
+                <div class="version-description">
+                    個人プロファイル追跡、技術継承性指標<br>
+                    セクター別在籍期間、イベントシステム
+                </div>
+                <a href="v2/index.html" class="demo-button">デモを開く</a>
+            </div>
+            
+            <div class="version-card">
+                <div class="version-title">Version 3: 大規模シミュレーション</div>
+                <div class="version-description">
+                    コホートモデル（46万人対応）<br>
+                    人口統計連動、遷移行列による人材フロー
+                </div>
+                <a href="v3/index.html" class="demo-button">デモを開く</a>
+            </div>
+        </div>
+        
+        <div class="features">
+            <h2 style="text-align: center; margin-bottom: 30px;">主要機能</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-emoji">📊</span>
+                    <div>
+                        <strong>12軸レーダーチャート</strong><br>
+                        多次元的な国力評価
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-emoji">🎯</span>
+                    <div>
+                        <strong>4セクター戦略</strong><br>
+                        大学・産業界・政府・研究機関
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-emoji">🔮</span>
+                    <div>
+                        <strong>将来予測</strong><br>
+                        5年後・10年後の国力シミュレーション
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-emoji">⚙️</span>
+                    <div>
+                        <strong>最適化問題</strong><br>
+                        投資配分・人材配置の数理的解析
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>GitHub Repository:</strong> <a href="https://github.com/shigenoburyuto/Human_Resource_Sim">Human_Resource_Sim</a></p>
+            <p>プロジェクト開始: 2024年 | 最終更新: 2025年</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,578 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+// 能力軸の定義（12軸）
+const CAPABILITY_AXES = [
+  { key: 'basicScience', name: '基礎科学', color: '#8884d8' },
+  { key: 'appliedTech', name: '応用技術', color: '#82ca9d' },
+  { key: 'digitalAI', name: 'デジタル・AI', color: '#ffc658' },
+  { key: 'manufacturing', name: '製造・ものづくり', color: '#ff7300' },
+  { key: 'finance', name: '金融・経済', color: '#00C49F' },
+  { key: 'healthcare', name: '医療・ヘルスケア', color: '#FFBB28' },
+  { key: 'energy', name: 'エネルギー・環境', color: '#FF8042' },
+  { key: 'globalCompete', name: '国際競争力', color: '#0088FE' },
+  { key: 'innovation', name: 'イノベーション', color: '#00C49F' },
+  { key: 'education', name: '教育基盤', color: '#FFBB28' },
+  { key: 'policyMaking', name: '政策立案', color: '#FF8042' },
+  { key: 'implementation', name: '社会実装力', color: '#8884d8' },
+];
+
+// 初期国力状態
+const initialNationalCapability = {
+  basicScience: 70,
+  appliedTech: 65,
+  digitalAI: 55,
+  manufacturing: 75,
+  finance: 60,
+  healthcare: 70,
+  energy: 50,
+  globalCompete: 45,
+  innovation: 50,
+  education: 65,
+  policyMaking: 55,
+  implementation: 60,
+};
+
+// 目標プロファイル
+const targetCapability = {
+  basicScience: 85,
+  appliedTech: 85,
+  digitalAI: 90,
+  manufacturing: 80,
+  finance: 75,
+  healthcare: 85,
+  energy: 80,
+  globalCompete: 75,
+  innovation: 85,
+  education: 80,
+  policyMaking: 70,
+  implementation: 80,
+};
+
+// セクター定義
+const SECTORS = {
+  university: {
+    name: '大学・研究機関',
+    icon: '🎓',
+    description: '基礎研究・人材育成の土台',
+    growthFactors: ['basicScience', 'education', 'innovation'],
+    outputTo: ['industry', 'government', 'research'],
+  },
+  industry: {
+    name: '産業界',
+    icon: '🏭',
+    description: '経験的技術・実践知の蓄積',
+    growthFactors: ['appliedTech', 'manufacturing', 'digitalAI', 'implementation'],
+    outputTo: [],
+  },
+  government: {
+    name: '政府・政策',
+    icon: '🏛️',
+    description: '投資配分・制度設計',
+    growthFactors: ['policyMaking', 'finance'],
+    outputTo: [],
+  },
+  research: {
+    name: '外部研究者',
+    icon: '🔬',
+    description: '高度専門知識・国際連携',
+    growthFactors: ['globalCompete', 'healthcare', 'energy'],
+    outputTo: [],
+  },
+};
+
+export default function TalentDevelopmentSimulator() {
+  // 状態管理
+  const [year, setYear] = useState(0);
+  const [budget, setBudget] = useState(1000);
+  const [capability, setCapability] = useState({...initialNationalCapability});
+  const [history, setHistory] = useState([{year: 0, ...initialNationalCapability, totalScore: calculateScore(initialNationalCapability)}]);
+  const [isSimulating, setIsSimulating] = useState(false);
+  
+  // 投資配分
+  const [investments, setInvestments] = useState({
+    university: 30,
+    industry: 35,
+    government: 15,
+    research: 20,
+  });
+  
+  // 人材配分（大学からの輩出先）
+  const [talentAllocation, setTalentAllocation] = useState({
+    toIndustry: 50,
+    toGovernment: 20,
+    toResearch: 30,
+  });
+  
+  // キーパーソン依存度（各軸での集中度）
+  const [keyPersonRisk, setKeyPersonRisk] = useState({});
+
+  // スコア計算
+  function calculateScore(cap) {
+    const values = Object.values(cap);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const min = Math.min(...values);
+    // 最小値が低いとペナルティ（一つでも欠けると国力低下）
+    return Math.round(avg * 0.6 + min * 0.4);
+  }
+
+  // 目標達成度計算（コサイン類似度）
+  function calculateAchievement(cap) {
+    let dotProduct = 0;
+    let normCap = 0;
+    let normTarget = 0;
+    
+    CAPABILITY_AXES.forEach(axis => {
+      dotProduct += cap[axis.key] * targetCapability[axis.key];
+      normCap += cap[axis.key] ** 2;
+      normTarget += targetCapability[axis.key] ** 2;
+    });
+    
+    return (dotProduct / (Math.sqrt(normCap) * Math.sqrt(normTarget)) * 100).toFixed(1);
+  }
+
+  // 1年分のシミュレーション
+  const simulateYear = useCallback(() => {
+    setCapability(prev => {
+      const newCap = {...prev};
+      
+      // 大学投資効果（基礎能力向上）
+      const uniEffect = investments.university / 100;
+      newCap.basicScience += uniEffect * 3 * (1 + talentAllocation.toResearch / 100);
+      newCap.education += uniEffect * 2;
+      newCap.innovation += uniEffect * 1.5;
+      
+      // 産業界投資効果（実践能力向上）
+      const indEffect = investments.industry / 100;
+      newCap.appliedTech += indEffect * 3;
+      newCap.manufacturing += indEffect * 2.5;
+      newCap.digitalAI += indEffect * 2;
+      newCap.implementation += indEffect * 2;
+      
+      // 政府投資効果（政策・調整能力）
+      const govEffect = investments.government / 100;
+      newCap.policyMaking += govEffect * 2;
+      newCap.finance += govEffect * 1.5;
+      
+      // 研究投資効果（先端・国際能力）
+      const resEffect = investments.research / 100;
+      newCap.globalCompete += resEffect * 3;
+      newCap.healthcare += resEffect * 2;
+      newCap.energy += resEffect * 2;
+      
+      // 人材配分の相互作用効果
+      const talentSynergy = (talentAllocation.toIndustry * talentAllocation.toResearch) / 10000;
+      newCap.innovation += talentSynergy * 1.5;
+      newCap.implementation += talentSynergy * 1;
+      
+      // 陳腐化（毎年少しずつ減少）
+      Object.keys(newCap).forEach(key => {
+        newCap[key] = Math.max(0, Math.min(100, newCap[key] - 1 + Math.random() * 0.5));
+      });
+      
+      // キーパーソンリスク計算
+      const newRisk = {};
+      Object.keys(newCap).forEach(key => {
+        // 高い値ほどキーパーソン依存のリスク
+        newRisk[key] = newCap[key] > 80 ? 'high' : newCap[key] > 60 ? 'medium' : 'low';
+      });
+      setKeyPersonRisk(newRisk);
+      
+      return newCap;
+    });
+    
+    setBudget(prev => {
+      // 国力に応じた収入
+      const income = calculateScore(capability) * 2;
+      const totalInvestment = Object.values(investments).reduce((a, b) => a + b, 0);
+      return Math.max(0, prev + income - totalInvestment * 3);
+    });
+    
+    setYear(prev => prev + 1);
+  }, [investments, talentAllocation, capability]);
+
+  // 履歴更新
+  useEffect(() => {
+    if (year > 0) {
+      setHistory(prev => [...prev, {
+        year,
+        ...capability,
+        totalScore: calculateScore(capability)
+      }]);
+    }
+  }, [year, capability]);
+
+  // 自動シミュレーション
+  useEffect(() => {
+    if (isSimulating && year < 20) {
+      const timer = setTimeout(simulateYear, 500);
+      return () => clearTimeout(timer);
+    } else if (year >= 20) {
+      setIsSimulating(false);
+    }
+  }, [isSimulating, year, simulateYear]);
+
+  // レーダーチャート用データ変換
+  const radarData = CAPABILITY_AXES.map(axis => ({
+    axis: axis.name,
+    current: capability[axis.key],
+    target: targetCapability[axis.key],
+    initial: initialNationalCapability[axis.key],
+  }));
+
+  // 5年後・10年後予測
+  const predictFuture = (years) => {
+    let futureData = history.find(h => h.year === year + years);
+    if (!futureData && history.length > 0) {
+      // 現在のトレンドから予測
+      const trend = {};
+      if (history.length >= 2) {
+        const recent = history[history.length - 1];
+        const prev = history[Math.max(0, history.length - 3)];
+        const yearDiff = recent.year - prev.year || 1;
+        
+        CAPABILITY_AXES.forEach(axis => {
+          const change = (recent[axis.key] - prev[axis.key]) / yearDiff;
+          trend[axis.key] = Math.max(0, Math.min(100, capability[axis.key] + change * years));
+        });
+      } else {
+        CAPABILITY_AXES.forEach(axis => {
+          trend[axis.key] = capability[axis.key];
+        });
+      }
+      return trend;
+    }
+    return futureData || capability;
+  };
+
+  const future5 = predictFuture(5);
+  const future10 = predictFuture(10);
+
+  const futureRadarData = CAPABILITY_AXES.map(axis => ({
+    axis: axis.name,
+    current: capability[axis.key],
+    year5: future5[axis.key] || capability[axis.key],
+    year10: future10[axis.key] || capability[axis.key],
+    target: targetCapability[axis.key],
+  }));
+
+  // リセット
+  const resetSimulation = () => {
+    setYear(0);
+    setBudget(1000);
+    setCapability({...initialNationalCapability});
+    setHistory([{year: 0, ...initialNationalCapability, totalScore: calculateScore(initialNationalCapability)}]);
+    setIsSimulating(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+      <h1 className="text-3xl font-bold text-center mb-2 text-cyan-400">
+        🌏 国家人材育成シミュレーター
+      </h1>
+      <p className="text-center text-gray-400 mb-4">
+        Human Capital Development Optimization Game
+      </p>
+      
+      {/* ステータスバー */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="bg-gray-800 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-yellow-400">{year}年目</div>
+          <div className="text-gray-400 text-sm">経過年数</div>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-green-400">{budget.toFixed(0)}</div>
+          <div className="text-gray-400 text-sm">予算残高</div>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-blue-400">{calculateScore(capability)}</div>
+          <div className="text-gray-400 text-sm">総合国力スコア</div>
+        </div>
+        <div className="bg-gray-800 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-purple-400">{calculateAchievement(capability)}%</div>
+          <div className="text-gray-400 text-sm">目標達成度</div>
+        </div>
+      </div>
+
+      {/* メインコンテンツ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* 左側：現在の国力レーダーチャート */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <h2 className="text-xl font-bold mb-4 text-cyan-300">📊 現在の国力プロファイル</h2>
+          <ResponsiveContainer width="100%" height={400}>
+            <RadarChart data={radarData}>
+              <PolarGrid stroke="#444" />
+              <PolarAngleAxis dataKey="axis" tick={{ fill: '#aaa', fontSize: 11 }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#666' }} />
+              <Radar
+                name="現在"
+                dataKey="current"
+                stroke="#00ffff"
+                fill="#00ffff"
+                fillOpacity={0.3}
+                strokeWidth={2}
+              />
+              <Radar
+                name="目標"
+                dataKey="target"
+                stroke="#ff6b6b"
+                fill="#ff6b6b"
+                fillOpacity={0.1}
+                strokeDasharray="5 5"
+              />
+              <Radar
+                name="初期"
+                dataKey="initial"
+                stroke="#888"
+                fill="transparent"
+                strokeDasharray="3 3"
+              />
+              <Legend />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 右側：5年後・10年後予測 */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <h2 className="text-xl font-bold mb-4 text-orange-300">🔮 将来予測（5年後・10年後）</h2>
+          <ResponsiveContainer width="100%" height={400}>
+            <RadarChart data={futureRadarData}>
+              <PolarGrid stroke="#444" />
+              <PolarAngleAxis dataKey="axis" tick={{ fill: '#aaa', fontSize: 11 }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#666' }} />
+              <Radar
+                name="現在"
+                dataKey="current"
+                stroke="#00ffff"
+                fill="#00ffff"
+                fillOpacity={0.2}
+              />
+              <Radar
+                name="5年後予測"
+                dataKey="year5"
+                stroke="#ffd700"
+                fill="#ffd700"
+                fillOpacity={0.2}
+              />
+              <Radar
+                name="10年後予測"
+                dataKey="year10"
+                stroke="#ff4500"
+                fill="#ff4500"
+                fillOpacity={0.2}
+              />
+              <Radar
+                name="目標"
+                dataKey="target"
+                stroke="#888"
+                fill="transparent"
+                strokeDasharray="5 5"
+              />
+              <Legend />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* 投資配分コントロール */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        
+        {/* 投資配分 */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <h2 className="text-xl font-bold mb-4 text-green-300">💰 投資配分 (セクター別)</h2>
+          {Object.entries(SECTORS).map(([key, sector]) => (
+            <div key={key} className="mb-4">
+              <div className="flex justify-between items-center mb-1">
+                <span>{sector.icon} {sector.name}</span>
+                <span className="text-yellow-400 font-bold">{investments[key]}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={investments[key]}
+                onChange={(e) => setInvestments(prev => ({...prev, [key]: parseInt(e.target.value)}))}
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              />
+              <p className="text-gray-500 text-xs mt-1">{sector.description}</p>
+            </div>
+          ))}
+          <div className="text-right mt-4">
+            <span className={`font-bold ${Object.values(investments).reduce((a,b) => a+b, 0) === 100 ? 'text-green-400' : 'text-red-400'}`}>
+              合計: {Object.values(investments).reduce((a,b) => a+b, 0)}%
+            </span>
+          </div>
+        </div>
+
+        {/* 人材配分（大学から各セクターへ） */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <h2 className="text-xl font-bold mb-4 text-purple-300">👥 人材配分 (大学→各セクター)</h2>
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <span>🏭 → 産業界</span>
+              <span className="text-blue-400 font-bold">{talentAllocation.toIndustry}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={talentAllocation.toIndustry}
+              onChange={(e) => setTalentAllocation(prev => ({...prev, toIndustry: parseInt(e.target.value)}))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <span>🏛️ → 政府・官僚</span>
+              <span className="text-green-400 font-bold">{talentAllocation.toGovernment}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={talentAllocation.toGovernment}
+              onChange={(e) => setTalentAllocation(prev => ({...prev, toGovernment: parseInt(e.target.value)}))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <span>🔬 → 研究機関</span>
+              <span className="text-purple-400 font-bold">{talentAllocation.toResearch}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={talentAllocation.toResearch}
+              onChange={(e) => setTalentAllocation(prev => ({...prev, toResearch: parseInt(e.target.value)}))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+          <div className="text-right mt-4">
+            <span className={`font-bold ${Object.values(talentAllocation).reduce((a,b) => a+b, 0) === 100 ? 'text-green-400' : 'text-red-400'}`}>
+              合計: {Object.values(talentAllocation).reduce((a,b) => a+b, 0)}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 時系列グラフ */}
+      <div className="bg-gray-800 rounded-lg p-4 mt-6">
+        <h2 className="text-xl font-bold mb-4 text-yellow-300">📈 国力推移（時系列）</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={history}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+            <XAxis dataKey="year" stroke="#888" label={{ value: '年', position: 'insideBottomRight', offset: -5 }} />
+            <YAxis domain={[0, 100]} stroke="#888" />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#333', border: 'none' }}
+              labelStyle={{ color: '#fff' }}
+            />
+            <Legend />
+            <Line type="monotone" dataKey="totalScore" stroke="#00ffff" strokeWidth={3} name="総合スコア" dot={false} />
+            <Line type="monotone" dataKey="basicScience" stroke="#8884d8" strokeWidth={1} name="基礎科学" dot={false} />
+            <Line type="monotone" dataKey="digitalAI" stroke="#ffc658" strokeWidth={1} name="デジタル・AI" dot={false} />
+            <Line type="monotone" dataKey="innovation" stroke="#82ca9d" strokeWidth={1} name="イノベーション" dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* 能力値詳細テーブル */}
+      <div className="bg-gray-800 rounded-lg p-4 mt-6">
+        <h2 className="text-xl font-bold mb-4 text-pink-300">📋 能力値詳細</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {CAPABILITY_AXES.map(axis => {
+            const current = capability[axis.key];
+            const target = targetCapability[axis.key];
+            const gap = target - current;
+            const risk = keyPersonRisk[axis.key];
+            
+            return (
+              <div key={axis.key} className="bg-gray-700 rounded p-3">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">{axis.name}</span>
+                  {risk === 'high' && <span className="text-red-400 text-xs">⚠️ 高依存</span>}
+                </div>
+                <div className="text-2xl font-bold" style={{ color: current >= target ? '#4ade80' : current >= target * 0.8 ? '#fbbf24' : '#f87171' }}>
+                  {current.toFixed(1)}
+                </div>
+                <div className="text-xs text-gray-400">
+                  目標: {target} ({gap > 0 ? `-${gap.toFixed(1)}` : `+${Math.abs(gap).toFixed(1)}`})
+                </div>
+                <div className="w-full bg-gray-600 rounded-full h-2 mt-2">
+                  <div 
+                    className="h-2 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${Math.min(100, (current / target) * 100)}%`,
+                      backgroundColor: current >= target ? '#4ade80' : current >= target * 0.8 ? '#fbbf24' : '#f87171'
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* コントロールボタン */}
+      <div className="flex justify-center gap-4 mt-6 mb-8">
+        <button
+          onClick={simulateYear}
+          disabled={isSimulating}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition disabled:opacity-50"
+        >
+          ▶️ 1年進める
+        </button>
+        <button
+          onClick={() => setIsSimulating(!isSimulating)}
+          className={`px-6 py-3 rounded-lg font-bold transition ${isSimulating ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+        >
+          {isSimulating ? '⏸️ 停止' : '⏩ 自動シミュレーション'}
+        </button>
+        <button
+          onClick={resetSimulation}
+          className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-bold transition"
+        >
+          🔄 リセット
+        </button>
+      </div>
+
+      {/* 数理モデル説明 */}
+      <div className="bg-gray-800 rounded-lg p-4 mt-6">
+        <h2 className="text-xl font-bold mb-4 text-cyan-300">📐 数理モデル概要</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+          <div>
+            <h3 className="font-bold text-white mb-2">国力集約関数</h3>
+            <p className="font-mono bg-gray-900 p-2 rounded text-xs">
+              S_j(t) = (Σ s_i,j^α)^(1/α) × Π(1 - e^(-βs_k,j))
+            </p>
+            <p className="mt-2">α &lt; 1 で補完性、キーパーソン欠損で急激な低下</p>
+          </div>
+          <div>
+            <h3 className="font-bold text-white mb-2">目標達成度（コサイン類似度）</h3>
+            <p className="font-mono bg-gray-900 p-2 rounded text-xs">
+              Achievement = (S·S_target) / (|S||S_target|) × 100%
+            </p>
+            <p className="mt-2">ベクトル方向の一致度で評価</p>
+          </div>
+          <div>
+            <h3 className="font-bold text-white mb-2">成長モデル</h3>
+            <p className="font-mono bg-gray-900 p-2 rounded text-xs">
+              ds/dt = η×T + γ×W + Σ(M×δ×s) - μ×s
+            </p>
+            <p className="mt-2">育成 + OJT + メンタリング - 陳腐化</p>
+          </div>
+          <div>
+            <h3 className="font-bold text-white mb-2">最適化目的関数</h3>
+            <p className="font-mono bg-gray-900 p-2 rounded text-xs">
+              min J = ∫[w₁‖S-S_target‖² + w₂ΣI + w₃Var + w₄Risk]dt
+            </p>
+            <p className="mt-2">目標乖離 + コスト + バランス + リスク</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
