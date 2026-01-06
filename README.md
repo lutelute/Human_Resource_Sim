@@ -9,7 +9,12 @@
 
 **[📊 シミュレーターを試す →](https://lutelute.github.io/Human_Resource_Sim/)**
 
-> ⚠️ **開発状況**: 現在GitHub Pagesでの表示に問題が発生しています。シミュレーターが正常に動作しない場合は、ローカル実行をお試しください。修正作業中です。
+> ✅ **修正完了**: GitHub Pages対応済み。全バージョンが正常に動作します！
+
+**各バージョン直接リンク:**
+- [v1 (基本版)](https://lutelute.github.io/Human_Resource_Sim/v1/) - 投資配分・レーダーチャート
+- [v2 (個人モデル)](https://lutelute.github.io/Human_Resource_Sim/v2/) - 人材追跡・技術継承性
+- [v3 (コホート版)](https://lutelute.github.io/Human_Resource_Sim/v3/) - 大規模シミュレーション・年齢分布
 
 ---
 
@@ -118,15 +123,13 @@ $$\max_{\mathbf{u}} \sum_{t=0}^{T} \gamma^t \left[ \text{Score}(t) + \lambda \cd
 ## 🎮 使い方
 
 ### オンライン版（推奨）
-> ⚠️ **注意**: 現在GitHub Pagesでの動作に問題があります。下記ローカル実行をお試しください。
-
 1. [デモサイト](https://lutelute.github.io/Human_Resource_Sim/)にアクセス
 2. 使用したいバージョンを選択
 3. 投資配分スライダーを調整
-4. 「1年進める」または「自動実行」をクリック
-5. レーダーチャートと時系列グラフで結果を確認
+4. 「1年進める」ボタンでシミュレーション実行
+5. レーダーチャートと統計データで結果を確認
 
-### ローカル実行（推奨）
+### ローカル実行
 ```bash
 git clone https://github.com/lutelute/Human_Resource_Sim.git
 cd Human_Resource_Sim
