@@ -8,10 +8,472 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .control-group h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .chart-container {
+            margin: 20px 0;
+            height: 400px;
+            position: relative;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: #f1f2f6;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .year-display {
+            text-align: center;
+            font-size: 1.5em;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+        
+        .individual-tracker {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .individual-list {
+            max-height: 300px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .individual-card {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 0.9em;
+        }
+        
+        .individual-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .individual-sector {
+            color: #7f8c8d;
+            font-size: 0.8em;
+        }
+    </style>
 </head>
 <body>
     <div id="root"></div>
-    <script type="text/babel" src="/Human_Resource_Sim/talent-simulator-v2.jsx"></script>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 能力軸の定義
+        const CAPABILITY_AXES = [
+            { key: 'basicScience', name: '基礎科学' },
+            { key: 'appliedTech', name: '応用技術' },
+            { key: 'digitalAI', name: 'デジタル・AI' },
+            { key: 'manufacturing', name: '製造・ものづくり' },
+            { key: 'finance', name: '金融・経済' },
+            { key: 'healthcare', name: '医療・ヘルスケア' },
+            { key: 'energy', name: 'エネルギー・環境' },
+            { key: 'globalCompete', name: '国際競争力' },
+            { key: 'innovation', name: 'イノベーション' },
+            { key: 'education', name: '教育基盤' },
+            { key: 'policyMaking', name: '政策立案' },
+            { key: 'implementation', name: '社会実装力' }
+        ];
+
+        // セクター定義
+        const SECTORS = ['university', 'industry', 'government', 'research'];
+        const SECTOR_NAMES = {
+            'university': '大学',
+            'industry': '産業界',
+            'government': '政府',
+            'research': '研究機関'
+        };
+
+        // 初期国力状態
+        const initialNationalCapability = {
+            basicScience: 70,
+            appliedTech: 65,
+            digitalAI: 55,
+            manufacturing: 75,
+            finance: 60,
+            healthcare: 70,
+            energy: 50,
+            globalCompete: 45,
+            innovation: 50,
+            education: 65,
+            policyMaking: 55,
+            implementation: 60,
+        };
+
+        function TalentDevelopmentSimulatorV2() {
+            const [year, setYear] = useState(0);
+            const [capability, setCapability] = useState({...initialNationalCapability});
+            const [investments, setInvestments] = useState({
+                university: 30,
+                industry: 35,
+                government: 15,
+                research: 20,
+            });
+            
+            const [talentAllocation, setTalentAllocation] = useState({
+                toIndustry: 50,
+                toGovernment: 20,
+                toResearch: 30,
+            });
+            
+            const [individuals, setIndividuals] = useState([]);
+            const [chart, setChart] = useState(null);
+
+            // 個人データ生成
+            const generateIndividual = (id, sector) => {
+                const strengths = [];
+                const numStrengths = Math.floor(Math.random() * 3) + 1;
+                
+                for (let i = 0; i < numStrengths; i++) {
+                    const randomAxis = CAPABILITY_AXES[Math.floor(Math.random() * CAPABILITY_AXES.length)];
+                    if (!strengths.includes(randomAxis.key)) {
+                        strengths.push(randomAxis.key);
+                    }
+                }
+                
+                return {
+                    id,
+                    name: `人材${id}`,
+                    sector,
+                    strengths,
+                    yearsInSector: 0,
+                    totalContribution: 0
+                };
+            };
+
+            // スコア計算
+            function calculateScore(cap) {
+                const values = Object.values(cap);
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                const min = Math.min(...values);
+                return Math.round(avg * 0.6 + min * 0.4);
+            }
+
+            // 1年分のシミュレーション
+            const simulateYear = () => {
+                setCapability(prev => {
+                    const newCap = {...prev};
+                    
+                    // 大学投資効果
+                    const uniEffect = investments.university / 100;
+                    newCap.basicScience += uniEffect * 3;
+                    newCap.education += uniEffect * 2;
+                    newCap.innovation += uniEffect * 1.5;
+                    
+                    // 産業界投資効果
+                    const indEffect = investments.industry / 100;
+                    newCap.appliedTech += indEffect * 3;
+                    newCap.manufacturing += indEffect * 2.5;
+                    newCap.digitalAI += indEffect * 2;
+                    newCap.implementation += indEffect * 2;
+                    
+                    // 政府投資効果
+                    const govEffect = investments.government / 100;
+                    newCap.policyMaking += govEffect * 3;
+                    newCap.finance += govEffect * 2;
+                    
+                    // 研究投資効果
+                    const resEffect = investments.research / 100;
+                    newCap.globalCompete += resEffect * 3;
+                    newCap.healthcare += resEffect * 2;
+                    newCap.energy += resEffect * 2;
+                    
+                    // 個人からの貢献効果
+                    individuals.forEach(person => {
+                        person.strengths.forEach(strength => {
+                            newCap[strength] += 0.5 * (person.yearsInSector + 1) / 10;
+                        });
+                    });
+                    
+                    // 上限を100に制限
+                    Object.keys(newCap).forEach(key => {
+                        newCap[key] = Math.min(100, newCap[key]);
+                    });
+                    
+                    return newCap;
+                });
+                
+                // 個人データ更新
+                setIndividuals(prev => {
+                    let newIndividuals = [...prev];
+                    
+                    // 既存人材の年数増加
+                    newIndividuals = newIndividuals.map(person => ({
+                        ...person,
+                        yearsInSector: person.yearsInSector + 1
+                    }));
+                    
+                    // 新規人材追加（大学から各セクターへ）
+                    const newGraduates = Math.floor((investments.university / 10) * 2);
+                    for (let i = 0; i < newGraduates; i++) {
+                        let targetSector = 'industry';
+                        const rand = Math.random() * 100;
+                        if (rand < talentAllocation.toResearch) {
+                            targetSector = 'research';
+                        } else if (rand < talentAllocation.toResearch + talentAllocation.toGovernment) {
+                            targetSector = 'government';
+                        }
+                        
+                        newIndividuals.push(generateIndividual(
+                            Date.now() + i + Math.random(),
+                            targetSector
+                        ));
+                    }
+                    
+                    // 人数制限（最新1000人まで）
+                    if (newIndividuals.length > 1000) {
+                        newIndividuals = newIndividuals.slice(-1000);
+                    }
+                    
+                    return newIndividuals;
+                });
+                
+                setYear(prev => prev + 1);
+            };
+
+            // レーダーチャート更新
+            useEffect(() => {
+                const ctx = document.getElementById('radarChart');
+                if (ctx) {
+                    if (chart) {
+                        chart.destroy();
+                    }
+
+                    const data = {
+                        labels: CAPABILITY_AXES.map(axis => axis.name),
+                        datasets: [{
+                            label: '現在の国力',
+                            data: CAPABILITY_AXES.map(axis => capability[axis.key]),
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        }]
+                    };
+
+                    const newChart = new Chart(ctx, {
+                        type: 'radar',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                r: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: {
+                                        stepSize: 20
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    setChart(newChart);
+                }
+            }, [capability]);
+
+            return (
+                <div className="container">
+                    <h1 style={{textAlign: 'center', color: '#2c3e50'}}>🌏 国家人材育成シミュレーター v2</h1>
+                    <p style={{textAlign: 'center', color: '#7f8c8d'}}>個人モデル追跡・技術継承性指標</p>
+                    
+                    <div className="year-display">
+                        年度: {year}年目
+                    </div>
+
+                    <div className="stats">
+                        <div className="stat-card">
+                            <div className="stat-value">{calculateScore(capability)}</div>
+                            <div className="stat-label">総合国力スコア</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{individuals.length}</div>
+                            <div className="stat-label">人材総数</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{individuals.filter(p => p.sector === 'industry').length}</div>
+                            <div className="stat-label">産業界人材</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{Math.min(...Object.values(capability)).toFixed(0)}</div>
+                            <div className="stat-label">最弱軸スコア</div>
+                        </div>
+                    </div>
+
+                    <div className="controls">
+                        <div className="control-group">
+                            <h3>投資配分</h3>
+                            <div>
+                                🎓 大学投資: {investments.university}%
+                                <input 
+                                    type="range" 
+                                    className="slider"
+                                    min="0" max="100" 
+                                    value={investments.university}
+                                    onChange={(e) => setInvestments(prev => ({...prev, university: parseInt(e.target.value)}))}
+                                />
+                            </div>
+                            <div>
+                                🏭 産業投資: {investments.industry}%
+                                <input 
+                                    type="range" 
+                                    className="slider"
+                                    min="0" max="100" 
+                                    value={investments.industry}
+                                    onChange={(e) => setInvestments(prev => ({...prev, industry: parseInt(e.target.value)}))}
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="control-group">
+                            <h3>人材配分（大学からの輩出先）</h3>
+                            <div>
+                                🏭 産業界: {talentAllocation.toIndustry}%
+                                <input 
+                                    type="range" 
+                                    className="slider"
+                                    min="0" max="100" 
+                                    value={talentAllocation.toIndustry}
+                                    onChange={(e) => setTalentAllocation(prev => ({...prev, toIndustry: parseInt(e.target.value)}))}
+                                />
+                            </div>
+                            <div>
+                                🏛️ 政府: {talentAllocation.toGovernment}%
+                                <input 
+                                    type="range" 
+                                    className="slider"
+                                    min="0" max="100" 
+                                    value={talentAllocation.toGovernment}
+                                    onChange={(e) => setTalentAllocation(prev => ({...prev, toGovernment: parseInt(e.target.value)}))}
+                                />
+                            </div>
+                            <div>
+                                🔬 研究機関: {talentAllocation.toResearch}%
+                                <input 
+                                    type="range" 
+                                    className="slider"
+                                    min="0" max="100" 
+                                    value={talentAllocation.toResearch}
+                                    onChange={(e) => setTalentAllocation(prev => ({...prev, toResearch: parseInt(e.target.value)}))}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{textAlign: 'center', margin: '20px 0'}}>
+                        <button onClick={simulateYear}>1年進める</button>
+                        <button onClick={() => {
+                            setCapability({...initialNationalCapability});
+                            setYear(0);
+                            setIndividuals([]);
+                        }}>
+                            リセット
+                        </button>
+                    </div>
+
+                    <div className="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+
+                    <div className="individual-tracker">
+                        <h3>人材追跡 (最新50名)</h3>
+                        <div className="individual-list">
+                            {individuals.slice(-50).map(person => (
+                                <div key={person.id} className="individual-card">
+                                    <div className="individual-name">{person.name}</div>
+                                    <div className="individual-sector">{SECTOR_NAMES[person.sector]} ({person.yearsInSector}年目)</div>
+                                    <div style={{fontSize: '0.7em', marginTop: '3px'}}>
+                                        専門: {person.strengths.slice(0,2).map(s => CAPABILITY_AXES.find(a => a.key === s)?.name.slice(0,4)).join(', ')}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<TalentDevelopmentSimulatorV2 />, document.getElementById('root'));
+    </script>
 </body>
 </html>
