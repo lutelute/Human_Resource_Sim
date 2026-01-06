@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>人材育成シミュレーター v1</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -103,10 +100,61 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useEffect, useCallback } = React;
+    <div class="container">
+        <h1 style="text-align: center; color: #2c3e50;">🌏 国家人材育成シミュレーター v1</h1>
+        
+        <div class="year-display" id="yearDisplay">
+            年度: 0年目
+        </div>
 
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalScore">63</div>
+                <div class="stat-label">総合国力スコア</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="minScore">45</div>
+                <div class="stat-label">最弱軸スコア</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgScore">62</div>
+                <div class="stat-label">平均スコア</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3 id="uniLabel">🎓 大学投資: 30%</h3>
+                <input type="range" class="slider" id="uniSlider" min="0" max="100" value="30" />
+            </div>
+            
+            <div class="control-group">
+                <h3 id="indLabel">🏭 産業投資: 35%</h3>
+                <input type="range" class="slider" id="indSlider" min="0" max="100" value="35" />
+            </div>
+            
+            <div class="control-group">
+                <h3 id="govLabel">🏛️ 政府投資: 15%</h3>
+                <input type="range" class="slider" id="govSlider" min="0" max="100" value="15" />
+            </div>
+            
+            <div class="control-group">
+                <h3 id="resLabel">🔬 研究投資: 20%</h3>
+                <input type="range" class="slider" id="resSlider" min="0" max="100" value="20" />
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button onclick="simulateYear()">1年進める</button>
+            <button onclick="resetSimulation()">リセット</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="radarChart"></canvas>
+        </div>
+    </div>
+
+    <script>
         // 能力軸の定義
         const CAPABILITY_AXES = [
             { key: 'basicScience', name: '基礎科学' },
@@ -124,7 +172,7 @@
         ];
 
         // 初期国力状態
-        const initialNationalCapability = {
+        const initialCapability = {
             basicScience: 70,
             appliedTech: 65,
             digitalAI: 55,
@@ -139,192 +187,160 @@
             implementation: 60,
         };
 
-        function TalentDevelopmentSimulator() {
-            const [year, setYear] = useState(0);
-            const [capability, setCapability] = useState({...initialNationalCapability});
-            const [investments, setInvestments] = useState({
-                university: 30,
-                industry: 35,
-                government: 15,
-                research: 20,
-            });
-            
-            const [chart, setChart] = useState(null);
+        // 現在の状態
+        let year = 0;
+        let capability = {...initialCapability};
+        let investments = {
+            university: 30,
+            industry: 35,
+            government: 15,
+            research: 20,
+        };
+        let chart = null;
 
-            // スコア計算
-            function calculateScore(cap) {
-                const values = Object.values(cap);
-                const avg = values.reduce((a, b) => a + b, 0) / values.length;
-                const min = Math.min(...values);
-                return Math.round(avg * 0.6 + min * 0.4);
-            }
+        // スライダー要素
+        const sliders = {
+            university: document.getElementById('uniSlider'),
+            industry: document.getElementById('indSlider'),
+            government: document.getElementById('govSlider'),
+            research: document.getElementById('resSlider')
+        };
 
-            // 1年分のシミュレーション
-            const simulateYear = () => {
-                setCapability(prev => {
-                    const newCap = {...prev};
-                    
-                    // 大学投資効果
-                    const uniEffect = investments.university / 100;
-                    newCap.basicScience += uniEffect * 3;
-                    newCap.education += uniEffect * 2;
-                    newCap.innovation += uniEffect * 1.5;
-                    
-                    // 産業界投資効果
-                    const indEffect = investments.industry / 100;
-                    newCap.appliedTech += indEffect * 3;
-                    newCap.manufacturing += indEffect * 2.5;
-                    newCap.digitalAI += indEffect * 2;
-                    newCap.implementation += indEffect * 2;
-                    
-                    // 政府投資効果
-                    const govEffect = investments.government / 100;
-                    newCap.policyMaking += govEffect * 3;
-                    newCap.finance += govEffect * 2;
-                    
-                    // 研究投資効果
-                    const resEffect = investments.research / 100;
-                    newCap.globalCompete += resEffect * 3;
-                    newCap.healthcare += resEffect * 2;
-                    newCap.energy += resEffect * 2;
-                    
-                    // 上限を100に制限
-                    Object.keys(newCap).forEach(key => {
-                        newCap[key] = Math.min(100, newCap[key]);
-                    });
-                    
-                    return newCap;
-                });
-                setYear(prev => prev + 1);
-            };
+        const labels = {
+            university: document.getElementById('uniLabel'),
+            industry: document.getElementById('indLabel'),
+            government: document.getElementById('govLabel'),
+            research: document.getElementById('resLabel')
+        };
 
-            // レーダーチャート更新
-            useEffect(() => {
-                const ctx = document.getElementById('radarChart');
-                if (ctx) {
-                    if (chart) {
-                        chart.destroy();
-                    }
-
-                    const data = {
-                        labels: CAPABILITY_AXES.map(axis => axis.name),
-                        datasets: [{
-                            label: '現在の国力',
-                            data: CAPABILITY_AXES.map(axis => capability[axis.key]),
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                        }]
-                    };
-
-                    const newChart = new Chart(ctx, {
-                        type: 'radar',
-                        data: data,
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                r: {
-                                    beginAtZero: true,
-                                    max: 100,
-                                    ticks: {
-                                        stepSize: 20
-                                    }
-                                }
-                            }
-                        }
-                    });
-                    setChart(newChart);
-                }
-            }, [capability]);
-
-            return (
-                <div className="container">
-                    <h1 style={{textAlign: 'center', color: '#2c3e50'}}>🌏 国家人材育成シミュレーター v1</h1>
-                    
-                    <div className="year-display">
-                        年度: {year}年目
-                    </div>
-
-                    <div className="stats">
-                        <div className="stat-card">
-                            <div className="stat-value">{calculateScore(capability)}</div>
-                            <div className="stat-label">総合国力スコア</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-value">{Math.min(...Object.values(capability)).toFixed(0)}</div>
-                            <div className="stat-label">最弱軸スコア</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-value">{(Object.values(capability).reduce((a,b) => a+b) / Object.values(capability).length).toFixed(0)}</div>
-                            <div className="stat-label">平均スコア</div>
-                        </div>
-                    </div>
-
-                    <div className="controls">
-                        <div className="control-group">
-                            <h3>🎓 大学投資: {investments.university}%</h3>
-                            <input 
-                                type="range" 
-                                className="slider"
-                                min="0" max="100" 
-                                value={investments.university}
-                                onChange={(e) => setInvestments(prev => ({...prev, university: parseInt(e.target.value)}))}
-                            />
-                        </div>
-                        
-                        <div className="control-group">
-                            <h3>🏭 産業投資: {investments.industry}%</h3>
-                            <input 
-                                type="range" 
-                                className="slider"
-                                min="0" max="100" 
-                                value={investments.industry}
-                                onChange={(e) => setInvestments(prev => ({...prev, industry: parseInt(e.target.value)}))}
-                            />
-                        </div>
-                        
-                        <div className="control-group">
-                            <h3>🏛️ 政府投資: {investments.government}%</h3>
-                            <input 
-                                type="range" 
-                                className="slider"
-                                min="0" max="100" 
-                                value={investments.government}
-                                onChange={(e) => setInvestments(prev => ({...prev, government: parseInt(e.target.value)}))}
-                            />
-                        </div>
-                        
-                        <div className="control-group">
-                            <h3>🔬 研究投資: {investments.research}%</h3>
-                            <input 
-                                type="range" 
-                                className="slider"
-                                min="0" max="100" 
-                                value={investments.research}
-                                onChange={(e) => setInvestments(prev => ({...prev, research: parseInt(e.target.value)}))}
-                            />
-                        </div>
-                    </div>
-
-                    <div style={{textAlign: 'center', margin: '20px 0'}}>
-                        <button onClick={simulateYear}>1年進める</button>
-                        <button onClick={() => {
-                            setCapability({...initialNationalCapability});
-                            setYear(0);
-                        }}>
-                            リセット
-                        </button>
-                    </div>
-
-                    <div className="chart-container">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-                </div>
-            );
+        // スコア計算
+        function calculateScore(cap) {
+            const values = Object.values(cap);
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            const min = Math.min(...values);
+            return Math.round(avg * 0.6 + min * 0.4);
         }
 
-        ReactDOM.render(<TalentDevelopmentSimulator />, document.getElementById('root'));
+        // 統計更新
+        function updateStats() {
+            const values = Object.values(capability);
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            const min = Math.min(...values);
+            const total = calculateScore(capability);
+            
+            document.getElementById('totalScore').textContent = total;
+            document.getElementById('minScore').textContent = min.toFixed(0);
+            document.getElementById('avgScore').textContent = avg.toFixed(0);
+            document.getElementById('yearDisplay').textContent = `年度: ${year}年目`;
+        }
+
+        // チャート更新
+        function updateChart() {
+            const ctx = document.getElementById('radarChart');
+            if (chart) {
+                chart.destroy();
+            }
+
+            const data = {
+                labels: CAPABILITY_AXES.map(axis => axis.name),
+                datasets: [{
+                    label: '現在の国力',
+                    data: CAPABILITY_AXES.map(axis => capability[axis.key]),
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                }]
+            };
+
+            chart = new Chart(ctx, {
+                type: 'radar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 1年分のシミュレーション
+        function simulateYear() {
+            // 大学投資効果
+            const uniEffect = investments.university / 100;
+            capability.basicScience += uniEffect * 3;
+            capability.education += uniEffect * 2;
+            capability.innovation += uniEffect * 1.5;
+            
+            // 産業界投資効果
+            const indEffect = investments.industry / 100;
+            capability.appliedTech += indEffect * 3;
+            capability.manufacturing += indEffect * 2.5;
+            capability.digitalAI += indEffect * 2;
+            capability.implementation += indEffect * 2;
+            
+            // 政府投資効果
+            const govEffect = investments.government / 100;
+            capability.policyMaking += govEffect * 3;
+            capability.finance += govEffect * 2;
+            
+            // 研究投資効果
+            const resEffect = investments.research / 100;
+            capability.globalCompete += resEffect * 3;
+            capability.healthcare += resEffect * 2;
+            capability.energy += resEffect * 2;
+            
+            // 上限を100に制限
+            Object.keys(capability).forEach(key => {
+                capability[key] = Math.min(100, capability[key]);
+            });
+            
+            year++;
+            updateStats();
+            updateChart();
+        }
+
+        // リセット
+        function resetSimulation() {
+            year = 0;
+            capability = {...initialCapability};
+            updateStats();
+            updateChart();
+        }
+
+        // スライダーイベント
+        sliders.university.addEventListener('input', (e) => {
+            investments.university = parseInt(e.target.value);
+            labels.university.textContent = `🎓 大学投資: ${investments.university}%`;
+        });
+
+        sliders.industry.addEventListener('input', (e) => {
+            investments.industry = parseInt(e.target.value);
+            labels.industry.textContent = `🏭 産業投資: ${investments.industry}%`;
+        });
+
+        sliders.government.addEventListener('input', (e) => {
+            investments.government = parseInt(e.target.value);
+            labels.government.textContent = `🏛️ 政府投資: ${investments.government}%`;
+        });
+
+        sliders.research.addEventListener('input', (e) => {
+            investments.research = parseInt(e.target.value);
+            labels.research.textContent = `🔬 研究投資: ${investments.research}%`;
+        });
+
+        // 初期化
+        window.addEventListener('load', () => {
+            updateStats();
+            updateChart();
+        });
     </script>
 </body>
 </html>
