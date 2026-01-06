@@ -9,6 +9,8 @@
 
 **[📊 シミュレーターを試す →](https://lutelute.github.io/Human_Resource_Sim/)**
 
+> ⚠️ **開発状況**: 現在GitHub Pagesでの表示に問題が発生しています。シミュレーターが正常に動作しない場合は、ローカル実行をお試しください。修正作業中です。
+
 ---
 
 ## プロジェクト概要
@@ -116,13 +118,15 @@ $$\max_{\mathbf{u}} \sum_{t=0}^{T} \gamma^t \left[ \text{Score}(t) + \lambda \cd
 ## 🎮 使い方
 
 ### オンライン版（推奨）
+> ⚠️ **注意**: 現在GitHub Pagesでの動作に問題があります。下記ローカル実行をお試しください。
+
 1. [デモサイト](https://lutelute.github.io/Human_Resource_Sim/)にアクセス
 2. 使用したいバージョンを選択
 3. 投資配分スライダーを調整
 4. 「1年進める」または「自動実行」をクリック
 5. レーダーチャートと時系列グラフで結果を確認
 
-### ローカル実行
+### ローカル実行（推奨）
 ```bash
 git clone https://github.com/lutelute/Human_Resource_Sim.git
 cd Human_Resource_Sim
@@ -130,6 +134,11 @@ cd Human_Resource_Sim
 python -m http.server 8000
 # http://localhost:8000 にアクセス
 ```
+
+**各バージョンへの直接アクセス:**
+- v1 (基本版): `http://localhost:8000/v1/`
+- v2 (個人モデル): `http://localhost:8000/v2/`  
+- v3 (コホート版): `http://localhost:8000/v3/`
 
 ---
 
