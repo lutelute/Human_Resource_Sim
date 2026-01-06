@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>人材育成シミュレーター v2</title>
-    <!-- React and ReactDOM -->
+    
+    <!-- React and ReactDOM CDN -->
     <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-    <!-- Babel for JSX compilation -->
+    
+    <!-- Babel Standalone for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Recharts for React charts -->
+    
+    <!-- Recharts -->
     <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
     
     <style>
@@ -19,35 +22,25 @@
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
+            min-height: 100vh;
         }
         
         .container {
-            max-width: 1600px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         
-        .header {
+        h1 {
             text-align: center;
+            color: #2c3e50;
             margin-bottom: 30px;
         }
         
-        .title {
-            font-size: 2.5em;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            font-size: 1.2em;
-            color: #7f8c8d;
-            margin-bottom: 20px;
-        }
-        
-        .stats-grid {
+        .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
@@ -69,30 +62,27 @@
         }
         
         .stat-label {
-            color: #7f8c8d;
+            color: #6c757d;
             margin-top: 5px;
-            font-size: 0.9em;
         }
         
         .controls {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            margin: 40px 0;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
         }
         
         .control-section {
             background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
+            padding: 20px;
+            border-radius: 10px;
             border: 2px solid #e9ecef;
         }
         
         .control-section h3 {
             margin-top: 0;
             color: #2c3e50;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
         }
         
         .slider-container {
@@ -104,197 +94,76 @@
             justify-content: space-between;
             margin-bottom: 5px;
             color: #2c3e50;
-            font-weight: 500;
         }
         
         .slider {
             width: 100%;
-            height: 8px;
-            border-radius: 4px;
-            background: #e9ecef;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
             outline: none;
-            -webkit-appearance: none;
-        }
-        
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #3498db;
-            cursor: pointer;
-        }
-        
-        .chart-container {
-            margin: 30px 0;
-            height: 500px;
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            border: 2px solid #e9ecef;
-        }
-        
-        .individuals-section {
-            margin: 40px 0;
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            border: 2px solid #e9ecef;
-        }
-        
-        .individuals-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .individual-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            transition: transform 0.2s ease;
-        }
-        
-        .individual-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .individual-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .individual-name {
-            font-weight: bold;
-            color: #2c3e50;
-            font-size: 1.1em;
-        }
-        
-        .individual-age {
-            background: #3498db;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-        }
-        
-        .individual-info {
-            margin-bottom: 15px;
-        }
-        
-        .individual-role {
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-        
-        .individual-tenure {
-            color: #27ae60;
-            font-size: 0.8em;
-            margin-top: 3px;
-        }
-        
-        .skills-mini-chart {
-            margin-top: 10px;
-        }
-        
-        .skill-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 3px 0;
-            font-size: 0.7em;
-        }
-        
-        .skill-name {
-            min-width: 60px;
-            color: #7f8c8d;
-        }
-        
-        .skill-progress {
-            flex-grow: 1;
-            height: 4px;
-            background: #e9ecef;
-            border-radius: 2px;
-            margin: 0 8px;
-            overflow: hidden;
-        }
-        
-        .skill-fill {
-            height: 100%;
-            background: #3498db;
-            transition: width 0.3s ease;
-        }
-        
-        .skill-value {
-            min-width: 25px;
-            text-align: right;
-            color: #2c3e50;
-            font-weight: 500;
-        }
-        
-        .succession-indicator {
-            background: #f39c12;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 0.7em;
-            margin-top: 5px;
-            display: inline-block;
-        }
-        
-        .buttons {
-            text-align: center;
-            margin: 30px 0;
         }
         
         button {
             background: #3498db;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 10px 20px;
+            border-radius: 5px;
             cursor: pointer;
             margin: 10px;
             font-size: 1em;
-            font-weight: 500;
-            transition: background 0.3s ease;
         }
         
         button:hover {
             background: #2980b9;
         }
         
-        .event-log {
-            background: #f8f9fa;
-            padding: 20px;
+        .chart-container {
+            margin: 30px 0;
+            height: 400px;
+            background: white;
             border-radius: 10px;
-            margin: 20px 0;
-            max-height: 200px;
-            overflow-y: auto;
+            padding: 20px;
             border: 2px solid #e9ecef;
         }
         
-        .event-item {
-            padding: 8px;
-            margin: 5px 0;
+        .individuals {
+            margin: 30px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .individual-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .individual-card {
             background: white;
-            border-radius: 5px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .individual-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .individual-info {
             font-size: 0.9em;
-            border-left: 4px solid #3498db;
+            color: #6c757d;
         }
         
-        .retirement-event {
-            border-left-color: #e74c3c;
-        }
-        
-        .graduation-event {
-            border-left-color: #27ae60;
+        .buttons {
+            text-align: center;
+            margin: 20px 0;
         }
     </style>
 </head>
@@ -303,12 +172,9 @@
 
     <script type="text/babel">
         const { useState, useEffect, useCallback } = React;
-        const { 
-            RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, 
-            ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar 
-        } = window.Recharts || {};
+        const { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } = window.Recharts || {};
 
-        // 能力軸の定義（11軸）
+        // 能力軸の定義
         const CAPABILITY_AXES = [
             { key: 'basicScience', name: '基礎科学', color: '#8884d8' },
             { key: 'appliedTech', name: '応用技術', color: '#82ca9d' },
@@ -351,7 +217,6 @@
 
         // 初期個人データ
         const initialIndividuals = [
-            // 大学セクター
             createIndividual(1, '山田教授', 'university', 'university_professor', 55, 25, {
                 basicScience: 90, appliedTech: 60, digitalAI: 40, manufacturing: 30,
                 finance: 20, energy: 50, globalCompete: 70, innovation: 65,
@@ -367,7 +232,6 @@
                 finance: 10, energy: 25, globalCompete: 30, innovation: 40,
                 education: 15, policyMaking: 5, implementation: 15, succession: 10,
             }),
-            // 産業界セクター
             createIndividual(4, '佐藤（若手SE）', 'industry', 'industry_engineer', 26, 2, {
                 basicScience: 30, appliedTech: 55, digitalAI: 70, manufacturing: 40,
                 finance: 25, energy: 20, globalCompete: 35, innovation: 45,
@@ -378,13 +242,7 @@
                 finance: 35, energy: 45, globalCompete: 50, innovation: 55,
                 education: 30, policyMaking: 25, implementation: 85, succession: 70,
             }),
-            createIndividual(6, '伊藤（中堅）', 'industry', 'industry_engineer', 35, 3, {
-                basicScience: 35, appliedTech: 70, digitalAI: 75, manufacturing: 55,
-                finance: 30, energy: 30, globalCompete: 40, innovation: 50,
-                education: 20, policyMaking: 15, implementation: 70, succession: 35,
-            }),
-            // 政府セクター
-            createIndividual(7, '渡辺（官僚）', 'government', 'government_official', 40, 2, {
+            createIndividual(6, '渡辺（官僚）', 'government', 'government_official', 40, 2, {
                 basicScience: 25, appliedTech: 30, digitalAI: 35, manufacturing: 20,
                 finance: 70, energy: 55, globalCompete: 45, innovation: 30,
                 education: 25, policyMaking: 80, implementation: 60, succession: 25,
@@ -404,40 +262,10 @@
             return capability;
         };
 
-        // 技術継承性スコア計算
-        const calculateSuccessionScore = (individuals) => {
-            let score = 0;
-            const sectors = ['university', 'industry', 'government'];
-            
-            sectors.forEach(sector => {
-                const sectorPeople = individuals.filter(i => i.sector === sector);
-                if (sectorPeople.length === 0) return;
-                
-                const ages = sectorPeople.map(p => p.age);
-                const ageRange = Math.max(...ages) - Math.min(...ages);
-                const ageScore = Math.min(40, ageRange) / 40 * 30;
-                
-                const tenureMargin = sectorPeople.reduce((sum, p) => {
-                    return sum + Math.max(0, p.maxTenure - p.tenure) / p.maxTenure;
-                }, 0) / sectorPeople.length;
-                const tenureScore = tenureMargin * 40;
-                
-                const highSkillCount = sectorPeople.filter(p => 
-                    Object.values(p.skills).reduce((a,b) => a+b, 0) / CAPABILITY_AXES.length > 50
-                ).length;
-                const mentorScore = (highSkillCount / sectorPeople.length) * 30;
-                
-                score += (ageScore + tenureScore + mentorScore) / 3;
-            });
-            
-            return score / sectors.length;
-        };
-
         function TalentDevelopmentSimulatorV2() {
             const [year, setYear] = useState(0);
             const [individuals, setIndividuals] = useState(initialIndividuals);
             const [capability, setCapability] = useState(() => calculateNationalCapability(initialIndividuals));
-            const [events, setEvents] = useState([]);
             const [investments, setInvestments] = useState({
                 university: 30,
                 industry: 35,
@@ -446,19 +274,47 @@
             });
 
             // スコア計算
-            const calculateScore = useCallback((cap) => {
+            const calculateScore = (cap) => {
                 const values = Object.values(cap);
                 const avg = values.reduce((a, b) => a + b, 0) / values.length;
                 const min = Math.min(...values);
                 return Math.round(avg * 0.6 + min * 0.4);
-            }, []);
+            };
+
+            // 技術継承性スコア計算
+            const calculateSuccessionScore = (individuals) => {
+                let score = 0;
+                const sectors = ['university', 'industry', 'government'];
+                
+                sectors.forEach(sector => {
+                    const sectorPeople = individuals.filter(i => i.sector === sector);
+                    if (sectorPeople.length === 0) return;
+                    
+                    const ages = sectorPeople.map(p => p.age);
+                    const ageRange = Math.max(...ages) - Math.min(...ages);
+                    const ageScore = Math.min(40, ageRange) / 40 * 30;
+                    
+                    const tenureMargin = sectorPeople.reduce((sum, p) => {
+                        return sum + Math.max(0, p.maxTenure - p.tenure) / p.maxTenure;
+                    }, 0) / sectorPeople.length;
+                    const tenureScore = tenureMargin * 40;
+                    
+                    const highSkillCount = sectorPeople.filter(p => 
+                        Object.values(p.skills).reduce((a,b) => a+b, 0) / CAPABILITY_AXES.length > 50
+                    ).length;
+                    const mentorScore = (highSkillCount / sectorPeople.length) * 30;
+                    
+                    score += (ageScore + tenureScore + mentorScore) / 3;
+                });
+                
+                return score / sectors.length;
+            };
 
             // 1年分のシミュレーション
-            const simulateYear = useCallback(() => {
+            const simulateYear = () => {
                 setIndividuals(prev => {
                     const newIndividuals = [...prev];
-                    const newEvents = [];
-
+                    
                     // 年齢と在籍年数の更新
                     newIndividuals.forEach(person => {
                         person.age++;
@@ -467,19 +323,11 @@
 
                     // 退職・卒業処理
                     const remainingIndividuals = newIndividuals.filter(person => {
-                        if (person.tenure >= person.maxTenure) {
-                            newEvents.push({
-                                type: person.role.includes('student') ? 'graduation' : 'retirement',
-                                message: `${person.name}が${person.role.includes('student') ? '卒業' : '退職'}しました (${person.age}歳)`
-                            });
-                            return false;
-                        }
-                        return true;
+                        return person.tenure < person.maxTenure;
                     });
 
-                    // 新規人材の追加（簡単な例）
-                    const newRecruits = Math.floor(Math.random() * 3);
-                    for (let i = 0; i < newRecruits; i++) {
+                    // 新規人材の追加
+                    if (Math.random() < 0.3) {
                         const sectors = ['university', 'industry', 'government'];
                         const randomSector = sectors[Math.floor(Math.random() * sectors.length)];
                         const roles = {
@@ -489,49 +337,48 @@
                         };
                         const randomRole = roles[randomSector][Math.floor(Math.random() * roles[randomSector].length)];
                         
-                        // ランダムスキル生成
                         const randomSkills = {};
                         CAPABILITY_AXES.forEach(axis => {
                             randomSkills[axis.key] = Math.floor(Math.random() * 60) + 20;
                         });
 
                         remainingIndividuals.push(createIndividual(
-                            Date.now() + i,
-                            `新人${Date.now() + i}`,
+                            Date.now(),
+                            `新人${Date.now()}`,
                             randomSector,
                             randomRole,
                             22 + Math.floor(Math.random() * 8),
                             0,
                             randomSkills
                         ));
-
-                        newEvents.push({
-                            type: 'recruitment',
-                            message: `新人${Date.now() + i}が${randomSector}に参加しました`
-                        });
                     }
 
-                    setEvents(prev => [...newEvents, ...prev].slice(0, 20));
                     return remainingIndividuals;
                 });
 
                 setYear(prev => prev + 1);
-            }, []);
+            };
 
             // 国力の更新
             useEffect(() => {
                 setCapability(calculateNationalCapability(individuals));
             }, [individuals]);
 
+            // レーダーチャートデータ
+            const radarData = CAPABILITY_AXES.map(axis => ({
+                name: axis.name,
+                current: capability[axis.key] || 0,
+                target: 80
+            }));
+
             return (
                 <div className="container">
-                    <div className="header">
-                        <h1 className="title">🌏 国家人材育成シミュレーター v2</h1>
-                        <p className="subtitle">Individual Profile Tracking & Succession Analysis</p>
-                        <p>年度: {year}年目 | 人材総数: {individuals.length}名</p>
-                    </div>
-
-                    <div className="stats-grid">
+                    <h1>🌏 国家人材育成シミュレーター v2</h1>
+                    <p style={{textAlign: 'center', color: '#6c757d', marginBottom: '30px'}}>
+                        Individual Profile Tracking & Succession Analysis
+                    </p>
+                    
+                    <div className="stats">
                         <div className="stat-card">
                             <div className="stat-value">{calculateScore(capability)}</div>
                             <div className="stat-label">総合国力スコア</div>
@@ -545,8 +392,8 @@
                             <div className="stat-label">技術継承性</div>
                         </div>
                         <div className="stat-card">
-                            <div className="stat-value">{individuals.filter(p => p.sector === 'industry').length}</div>
-                            <div className="stat-label">産業界人材</div>
+                            <div className="stat-value">{year}</div>
+                            <div className="stat-label">経過年数</div>
                         </div>
                     </div>
 
@@ -582,69 +429,41 @@
                         <button onClick={() => {
                             setYear(0);
                             setIndividuals(initialIndividuals);
-                            setEvents([]);
                         }}>
                             リセット
                         </button>
                     </div>
 
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={400}>
-                            <RadarChart data={CAPABILITY_AXES.map(axis => ({
-                                name: axis.name,
-                                current: capability[axis.key] || 0,
-                                target: 80
-                            }))}>
-                                <PolarGrid />
-                                <PolarAngleAxis dataKey="name" />
-                                <PolarRadiusAxis angle={0} domain={[0, 100]} />
-                                <Radar name="現在" dataKey="current" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-                                <Radar name="目標" dataKey="target" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.1} />
-                                <Legend />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                    </div>
+                    {ResponsiveContainer && (
+                        <div className="chart-container">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart data={radarData}>
+                                    <PolarGrid />
+                                    <PolarAngleAxis dataKey="name" />
+                                    <PolarRadiusAxis angle={0} domain={[0, 100]} />
+                                    <Radar name="現在" dataKey="current" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                                    <Radar name="目標" dataKey="target" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.1} />
+                                    <Legend />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
 
-                    <div className="event-log">
-                        <h4>📅 イベントログ</h4>
-                        {events.map((event, index) => (
-                            <div key={index} className={`event-item ${event.type}-event`}>
-                                {event.message}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="individuals-section">
+                    <div className="individuals">
                         <h3>👥 個人プロファイル ({individuals.length}名)</h3>
-                        <div className="individuals-grid">
+                        <div className="individual-grid">
                             {individuals.map(person => (
                                 <div key={person.id} className="individual-card">
-                                    <div className="individual-header">
-                                        <div className="individual-name">{person.name}</div>
-                                        <div className="individual-age">{person.age}歳</div>
+                                    <div className="individual-name">{person.name}</div>
+                                    <div className="individual-info">
+                                        {SECTOR_TENURE[person.role]?.name || person.role} | {person.age}歳
                                     </div>
                                     <div className="individual-info">
-                                        <div className="individual-role">{SECTOR_TENURE[person.role]?.name || person.role}</div>
-                                        <div className="individual-tenure">
-                                            在籍: {person.tenure}/{person.maxTenure}年
-                                        </div>
-                                        <div className="succession-indicator">
-                                            継承性: {person.skills.succession}
-                                        </div>
+                                        在籍: {person.tenure}/{person.maxTenure}年 | 継承性: {person.skills.succession}
                                     </div>
-                                    <div className="skills-mini-chart">
-                                        {CAPABILITY_AXES.slice(0, 6).map(axis => (
-                                            <div key={axis.key} className="skill-bar">
-                                                <div className="skill-name">{axis.name.slice(0, 3)}</div>
-                                                <div className="skill-progress">
-                                                    <div 
-                                                        className="skill-fill"
-                                                        style={{width: `${person.skills[axis.key]}%`}}
-                                                    />
-                                                </div>
-                                                <div className="skill-value">{person.skills[axis.key]}</div>
-                                            </div>
-                                        ))}
+                                    <div className="individual-info">
+                                        主要スキル: 基礎科学({person.skills.basicScience}) 
+                                        デジタルAI({person.skills.digitalAI})
                                     </div>
                                 </div>
                             ))}
@@ -654,6 +473,7 @@
             );
         }
 
+        // レンダリング
         ReactDOM.render(<TalentDevelopmentSimulatorV2 />, document.getElementById('root'));
     </script>
 </body>
