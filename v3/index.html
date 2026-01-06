@@ -4,255 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>人材育成シミュレーター v3</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Recharts for React charts -->
+    <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         body {
             font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-        }
-        
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        
-        .controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .control-group {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        
-        .control-group h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-        
-        .slider {
-            width: 100%;
-            margin: 10px 0;
-        }
-        
-        .chart-container {
-            margin: 20px 0;
-            height: 400px;
-            position: relative;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        
-        .stat-card {
-            background: #f1f2f6;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .stat-label {
-            color: #7f8c8d;
-            margin-top: 5px;
-            font-size: 0.9em;
-        }
-        
-        button {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        
-        button:hover {
-            background: #2980b9;
-        }
-        
-        .year-display {
-            text-align: center;
-            font-size: 1.5em;
-            margin: 20px 0;
-            color: #2c3e50;
-        }
-        
-        .cohort-display {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-        
-        .cohort-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .cohort-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-        
-        .cohort-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-        
-        .age-group {
-            display: flex;
-            justify-content: space-between;
-            margin: 5px 0;
-            font-size: 0.9em;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background: #e9ecef;
-            border-radius: 5px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: #3498db;
-            transition: width 0.3s ease;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 style="text-align: center; color: #2c3e50;">🌏 国家人材育成シミュレーター v3</h1>
-        <p style="text-align: center; color: #7f8c8d;">大規模コホートモデル（46万人対応）・人口統計連動</p>
-        
-        <div class="year-display" id="yearDisplay">
-            年度: 0年目
-        </div>
+    <div id="root"></div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-value" id="totalScore">63</div>
-                <div class="stat-label">総合国力スコア</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalPopulation">320K</div>
-                <div class="stat-label">総人材数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="industryPopulation">80K</div>
-                <div class="stat-label">産業界人材</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="universityPopulation">80K</div>
-                <div class="stat-label">大学人材</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="researchPopulation">80K</div>
-                <div class="stat-label">研究機関</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="minScore">45</div>
-                <div class="stat-label">最弱軸スコア</div>
-            </div>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+        const { 
+            RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, 
+            ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+            BarChart, Bar, AreaChart, Area, ScatterChart, Scatter
+        } = window.Recharts || {};
 
-        <div class="controls">
-            <div class="control-group">
-                <h3>投資配分</h3>
-                <div>
-                    <label id="uniLabel">🎓 大学投資: 30%</label>
-                    <input type="range" class="slider" id="uniSlider" min="0" max="100" value="30" />
-                </div>
-                <div>
-                    <label id="indLabel">🏭 産業投資: 35%</label>
-                    <input type="range" class="slider" id="indSlider" min="0" max="100" value="35" />
-                </div>
-                <div>
-                    <label id="govLabel">🏛️ 政府投資: 15%</label>
-                    <input type="range" class="slider" id="govSlider" min="0" max="100" value="15" />
-                </div>
-                <div>
-                    <label id="resLabel">🔬 研究投資: 20%</label>
-                    <input type="range" class="slider" id="resSlider" min="0" max="100" value="20" />
-                </div>
-            </div>
-        </div>
-
-        <div style="text-align: center; margin: 20px 0;">
-            <button onclick="simulateYear()">1年進める</button>
-            <button onclick="resetSimulation()">リセット</button>
-        </div>
-
-        <div class="chart-container">
-            <canvas id="radarChart"></canvas>
-        </div>
-
-        <div class="cohort-display">
-            <h3>コホート別人材分布（年齢×セクター）</h3>
-            <div class="cohort-grid" id="cohortGrid">
-                <!-- コホートデータがここに表示される -->
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // 能力軸の定義
+        // 能力軸の定義（12軸）
         const CAPABILITY_AXES = [
-            { key: 'basicScience', name: '基礎科学' },
-            { key: 'appliedTech', name: '応用技術' },
-            { key: 'digitalAI', name: 'デジタル・AI' },
-            { key: 'manufacturing', name: '製造・ものづくり' },
-            { key: 'finance', name: '金融・経済' },
-            { key: 'healthcare', name: '医療・ヘルスケア' },
-            { key: 'energy', name: 'エネルギー・環境' },
-            { key: 'globalCompete', name: '国際競争力' },
-            { key: 'innovation', name: 'イノベーション' },
-            { key: 'education', name: '教育基盤' },
-            { key: 'policyMaking', name: '政策立案' },
-            { key: 'implementation', name: '社会実装力' }
+            { key: 'basicScience', name: '基礎科学', color: '#8884d8' },
+            { key: 'appliedTech', name: '応用技術', color: '#82ca9d' },
+            { key: 'digitalAI', name: 'デジタル・AI', color: '#ffc658' },
+            { key: 'manufacturing', name: '製造・ものづくり', color: '#ff7300' },
+            { key: 'finance', name: '金融・経済', color: '#00C49F' },
+            { key: 'healthcare', name: '医療・ヘルスケア', color: '#FFBB28' },
+            { key: 'energy', name: 'エネルギー・環境', color: '#FF8042' },
+            { key: 'globalCompete', name: '国際競争力', color: '#0088FE' },
+            { key: 'innovation', name: 'イノベーション', color: '#00C49F' },
+            { key: 'education', name: '教育基盤', color: '#FFBB28' },
+            { key: 'policyMaking', name: '政策立案', color: '#FF8042' },
+            { key: 'implementation', name: '社会実装力', color: '#8884d8' },
         ];
 
-        // 年齢グループ定義
-        const AGE_GROUPS = ['20-29', '30-39', '40-49', '50-59', '60+'];
-        const SECTORS = ['university', 'industry', 'government', 'research'];
-        
-        const SECTOR_NAMES = {
-            'university': '大学',
-            'industry': '産業界',
-            'government': '政府',
-            'research': '研究機関'
+        // コホート定義（年齢層別）
+        const AGE_COHORTS = [
+            { key: 'young', name: '22-30歳', range: [22, 30], color: '#4ade80' },
+            { key: 'midCareer', name: '31-45歳', range: [31, 45], color: '#3b82f6' },
+            { key: 'senior', name: '46-60歳', range: [46, 60], color: '#f59e0b' },
+            { key: 'veteran', name: '61-65歳', range: [61, 65], color: '#ef4444' },
+        ];
+
+        // 初期人口統計データ（46万人スケール）
+        const INITIAL_POPULATION = {
+            university: { total: 120000, cohorts: { young: 0.8, midCareer: 0.15, senior: 0.05, veteran: 0 } },
+            industry: { total: 250000, cohorts: { young: 0.3, midCareer: 0.4, senior: 0.25, veteran: 0.05 } },
+            government: { total: 50000, cohorts: { young: 0.2, midCareer: 0.35, senior: 0.35, veteran: 0.1 } },
+            research: { total: 40000, cohorts: { young: 0.25, midCareer: 0.4, senior: 0.3, veteran: 0.05 } },
         };
 
         // 初期国力状態
-        const initialCapability = {
+        const initialNationalCapability = {
             basicScience: 70,
             appliedTech: 65,
             digitalAI: 55,
@@ -267,261 +79,520 @@
             implementation: 60,
         };
 
-        // 現在の状態
-        let year = 0;
-        let capability = {...initialCapability};
-        let investments = {
-            university: 30,
-            industry: 35,
-            government: 15,
-            research: 20,
+        // 目標プロファイル
+        const targetCapability = {
+            basicScience: 85,
+            appliedTech: 85,
+            digitalAI: 90,
+            manufacturing: 80,
+            finance: 75,
+            healthcare: 85,
+            energy: 80,
+            globalCompete: 75,
+            innovation: 85,
+            education: 80,
+            policyMaking: 70,
+            implementation: 80,
         };
-        
-        // コホートモデル（年齢×セクター別人材数）
-        let cohorts = {};
-        let chart = null;
 
-        // 初期コホート生成
-        function initializeCohorts() {
-            cohorts = {};
-            SECTORS.forEach(sector => {
-                cohorts[sector] = {};
-                AGE_GROUPS.forEach(ageGroup => {
-                    cohorts[sector][ageGroup] = Math.floor(Math.random() * 10000) + 5000;
-                });
-            });
-        }
-
-        // 総人材数計算
-        function getTotalPopulation() {
-            let total = 0;
-            SECTORS.forEach(sector => {
-                AGE_GROUPS.forEach(ageGroup => {
-                    total += cohorts[sector][ageGroup];
-                });
-            });
-            return total;
-        }
-
-        // セクター別人材数計算
-        function getSectorPopulation(sector) {
-            return AGE_GROUPS.reduce((total, ageGroup) => total + cohorts[sector][ageGroup], 0);
-        }
-
-        // スコア計算
-        function calculateScore(cap) {
-            const values = Object.values(cap);
-            const avg = values.reduce((a, b) => a + b, 0) / values.length;
-            const min = Math.min(...values);
-            return Math.round(avg * 0.6 + min * 0.4);
-        }
-
-        // 統計更新
-        function updateStats() {
-            const values = Object.values(capability);
-            const min = Math.min(...values);
-            const total = calculateScore(capability);
+        function TalentDevelopmentSimulatorV3() {
+            // 状態管理
+            const [year, setYear] = useState(0);
+            const [population, setPopulation] = useState(INITIAL_POPULATION);
+            const [capability, setCapability] = useState({...initialNationalCapability});
+            const [history, setHistory] = useState([]);
+            const [isSimulating, setIsSimulating] = useState(false);
+            const [viewMode, setViewMode] = useState('standard'); // 'standard' or 'deviation'
             
-            document.getElementById('totalScore').textContent = total;
-            document.getElementById('totalPopulation').textContent = Math.floor(getTotalPopulation() / 1000) + 'K';
-            document.getElementById('industryPopulation').textContent = Math.floor(getSectorPopulation('industry') / 1000) + 'K';
-            document.getElementById('universityPopulation').textContent = Math.floor(getSectorPopulation('university') / 1000) + 'K';
-            document.getElementById('researchPopulation').textContent = Math.floor(getSectorPopulation('research') / 1000) + 'K';
-            document.getElementById('minScore').textContent = min.toFixed(0);
-            document.getElementById('yearDisplay').textContent = `年度: ${year}年目`;
-        }
-
-        // コホート表示更新
-        function updateCohortDisplay() {
-            const gridElement = document.getElementById('cohortGrid');
-            gridElement.innerHTML = '';
-            
-            const totalPop = getTotalPopulation();
-            
-            SECTORS.forEach(sector => {
-                const card = document.createElement('div');
-                card.className = 'cohort-card';
-                
-                const sectorPop = getSectorPopulation(sector);
-                const percentage = ((sectorPop / totalPop) * 100).toFixed(1);
-                
-                let ageGroupsHTML = '';
-                AGE_GROUPS.forEach(ageGroup => {
-                    const count = Math.floor(cohorts[sector][ageGroup] / 1000);
-                    ageGroupsHTML += `
-                        <div class="age-group">
-                            <span>${ageGroup}歳</span>
-                            <span>${count}K</span>
-                        </div>
-                    `;
-                });
-                
-                card.innerHTML = `
-                    <div class="cohort-title">${SECTOR_NAMES[sector]}</div>
-                    ${ageGroupsHTML}
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${percentage}%"></div>
-                    </div>
-                    <div style="text-align: center; font-size: 0.9em; margin-top: 5px;">
-                        ${percentage}%
-                    </div>
-                `;
-                
-                gridElement.appendChild(card);
+            // 政策パラメータ
+            const [policyParams, setPolicyParams] = useState({
+                universityAdvancement: 56, // 大学進学率 %
+                masterAdvancement: 12,     // 修士進学率 %
+                doctoralAdvancement: 10,   // 博士進学率 %
+                populationDecline: 1.2,    // 人口減少率 %/年
+                retirementAge: 65,         // 退職年齢
+                techTransferRate: 30,      // 技術移転率 %
             });
-        }
 
-        // チャート更新
-        function updateChart() {
-            const ctx = document.getElementById('radarChart');
-            if (chart) {
-                chart.destroy();
-            }
+            // 投資配分
+            const [investments, setInvestments] = useState({
+                university: 30,
+                industry: 35,
+                government: 15,
+                research: 20,
+            });
 
-            const data = {
-                labels: CAPABILITY_AXES.map(axis => axis.name),
-                datasets: [{
-                    label: '現在の国力',
-                    data: CAPABILITY_AXES.map(axis => capability[axis.key]),
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                }]
+            // スコア計算
+            const calculateScore = useCallback((cap) => {
+                const values = Object.values(cap);
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                const min = Math.min(...values);
+                return Math.round(avg * 0.6 + min * 0.4);
+            }, []);
+
+            // 偏差値計算
+            const calculateDeviation = useCallback((cap) => {
+                const result = {};
+                CAPABILITY_AXES.forEach(axis => {
+                    // 目標を偏差値50として正規化
+                    const target = targetCapability[axis.key];
+                    const current = cap[axis.key];
+                    result[axis.key] = 50 + (current - target) * 10 / (target * 0.2);
+                });
+                return result;
+            }, []);
+
+            // コホート間の知識移転計算
+            const calculateKnowledgeTransfer = useCallback((pop) => {
+                let transferBonus = 0;
+                Object.values(pop).forEach(sector => {
+                    const cohorts = sector.cohorts;
+                    // シニア層からミドル層への知識移転
+                    const seniorToMid = (cohorts.senior || 0) * (cohorts.midCareer || 0) * 0.1;
+                    // ミドル層からヤング層への知識移転
+                    const midToYoung = (cohorts.midCareer || 0) * (cohorts.young || 0) * 0.1;
+                    transferBonus += seniorToMid + midToYoung;
+                });
+                return transferBonus;
+            }, []);
+
+            // 人口動態の更新
+            const updatePopulation = useCallback((pop, params) => {
+                const newPop = JSON.parse(JSON.stringify(pop));
+                
+                Object.keys(newPop).forEach(sector => {
+                    const sectorPop = newPop[sector];
+                    // 人口減少の影響
+                    sectorPop.total *= (1 - params.populationDecline / 100);
+                    
+                    // コホートの年齢シフト
+                    const oldCohorts = { ...sectorPop.cohorts };
+                    sectorPop.cohorts.veteran = oldCohorts.senior * 0.3;
+                    sectorPop.cohorts.senior = oldCohorts.midCareer * 0.3 + oldCohorts.senior * 0.7;
+                    sectorPop.cohorts.midCareer = oldCohorts.young * 0.3 + oldCohorts.midCareer * 0.7;
+                    sectorPop.cohorts.young = oldCohorts.young * 0.7;
+                    
+                    // 退職による減少
+                    sectorPop.cohorts.veteran *= 0.8;
+                    
+                    // 新規採用（大学から）
+                    if (sector === 'university') {
+                        sectorPop.cohorts.young += params.universityAdvancement * 1000;
+                    }
+                });
+
+                return newPop;
+            }, []);
+
+            // 1年分のシミュレーション
+            const simulateYear = useCallback(() => {
+                setPopulation(prev => updatePopulation(prev, policyParams));
+                
+                setCapability(prev => {
+                    const newCap = {...prev};
+                    
+                    // 投資効果の計算（人口規模を考慮）
+                    Object.entries(investments).forEach(([sector, investment]) => {
+                        const sectorPop = population[sector];
+                        const popEffect = sectorPop ? sectorPop.total / 100000 : 1;
+                        const investEffect = investment / 100 * popEffect;
+                        
+                        switch(sector) {
+                            case 'university':
+                                newCap.basicScience += investEffect * 2;
+                                newCap.education += investEffect * 1.5;
+                                newCap.innovation += investEffect * 1.2;
+                                break;
+                            case 'industry':
+                                newCap.appliedTech += investEffect * 2;
+                                newCap.manufacturing += investEffect * 1.8;
+                                newCap.digitalAI += investEffect * 1.5;
+                                newCap.implementation += investEffect * 1.5;
+                                break;
+                            case 'government':
+                                newCap.policyMaking += investEffect * 2;
+                                newCap.finance += investEffect * 1.5;
+                                break;
+                            case 'research':
+                                newCap.globalCompete += investEffect * 2;
+                                newCap.healthcare += investEffect * 1.5;
+                                newCap.energy += investEffect * 1.5;
+                                break;
+                        }
+                    });
+
+                    // 知識移転ボーナス
+                    const transferBonus = calculateKnowledgeTransfer(population);
+                    Object.keys(newCap).forEach(key => {
+                        newCap[key] += transferBonus;
+                    });
+
+                    // 陳腐化
+                    Object.keys(newCap).forEach(key => {
+                        const decay = key === 'digitalAI' ? 2 : 1;
+                        newCap[key] = Math.max(0, Math.min(100, newCap[key] - decay + Math.random() * 0.5));
+                    });
+
+                    return newCap;
+                });
+
+                setYear(prev => prev + 1);
+            }, [investments, population, policyParams, calculateKnowledgeTransfer]);
+
+            // 履歴更新
+            useEffect(() => {
+                const totalPop = Object.values(population).reduce((sum, sector) => sum + sector.total, 0);
+                setHistory(prev => [...prev, {
+                    year,
+                    ...capability,
+                    totalScore: calculateScore(capability),
+                    population: totalPop,
+                    populationByAge: AGE_COHORTS.reduce((acc, cohort) => {
+                        acc[cohort.key] = Object.values(population).reduce((sum, sector) => 
+                            sum + (sector.cohorts[cohort.key] || 0) * sector.total, 0);
+                        return acc;
+                    }, {}),
+                }]);
+            }, [year, capability, population, calculateScore]);
+
+            // 自動シミュレーション
+            useEffect(() => {
+                if (isSimulating && year < 30) {
+                    const timer = setTimeout(simulateYear, 800);
+                    return () => clearTimeout(timer);
+                } else if (year >= 30) {
+                    setIsSimulating(false);
+                }
+            }, [isSimulating, year, simulateYear]);
+
+            // データ変換
+            const displayCapability = viewMode === 'deviation' ? calculateDeviation(capability) : capability;
+            const displayTarget = viewMode === 'deviation' ? 
+                Object.fromEntries(CAPABILITY_AXES.map(axis => [axis.key, 50])) : targetCapability;
+
+            const radarData = CAPABILITY_AXES.map(axis => ({
+                axis: axis.name,
+                current: displayCapability[axis.key] || 0,
+                target: displayTarget[axis.key],
+                initial: viewMode === 'deviation' ? 50 : initialNationalCapability[axis.key],
+            }));
+
+            // 年齢構成データ
+            const ageDistributionData = AGE_COHORTS.map(cohort => {
+                const total = Object.values(population).reduce((sum, sector) => 
+                    sum + (sector.cohorts[cohort.key] || 0) * sector.total, 0);
+                return {
+                    name: cohort.name,
+                    value: Math.round(total),
+                    fill: cohort.color,
+                };
+            });
+
+            // セクター別人口データ
+            const sectorPopulationData = Object.entries(population).map(([key, sector]) => ({
+                name: key === 'university' ? '大学' : 
+                      key === 'industry' ? '産業界' : 
+                      key === 'government' ? '政府' : '研究機関',
+                value: Math.round(sector.total),
+                fill: key === 'university' ? '#8b5cf6' : 
+                      key === 'industry' ? '#3b82f6' : 
+                      key === 'government' ? '#10b981' : '#f59e0b',
+            }));
+
+            // リセット
+            const resetSimulation = () => {
+                setYear(0);
+                setPopulation(INITIAL_POPULATION);
+                setCapability({...initialNationalCapability});
+                setHistory([]);
+                setIsSimulating(false);
             };
 
-            chart = new Chart(ctx, {
-                type: 'radar',
-                data: data,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 100,
-                            ticks: {
-                                stepSize: 20
-                            }
-                        }
-                    }
-                }
-            });
+            return (
+                <div className="min-h-screen bg-gray-900 text-white p-4">
+                    <h1 className="text-3xl font-bold text-center mb-2 text-cyan-400">
+                        🌏 国家人材育成シミュレーター v3
+                    </h1>
+                    <p className="text-center text-gray-400 mb-4">
+                        Large Scale Population Dynamics & Cohort Analysis
+                    </p>
+                    
+                    {/* ステータスバー */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                        <div className="bg-gray-800 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-yellow-400">{year}年目</div>
+                            <div className="text-gray-400 text-sm">経過年数</div>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-green-400">
+                                {(Object.values(population).reduce((sum, s) => sum + s.total, 0) / 1000).toFixed(0)}K
+                            </div>
+                            <div className="text-gray-400 text-sm">総人材数</div>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-blue-400">{calculateScore(capability)}</div>
+                            <div className="text-gray-400 text-sm">総合国力スコア</div>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-purple-400">
+                                {viewMode === 'deviation' ? 
+                                    Object.values(calculateDeviation(capability)).reduce((a,b) => a+b, 0) / CAPABILITY_AXES.length : 
+                                    ((Object.values(capability).reduce((a,b) => a+b, 0) / CAPABILITY_AXES.length) / 
+                                     (Object.values(targetCapability).reduce((a,b) => a+b, 0) / CAPABILITY_AXES.length) * 100)
+                                }.toFixed(1){viewMode === 'deviation' ? '' : '%'}
+                            </div>
+                            <div className="text-gray-400 text-sm">{viewMode === 'deviation' ? '平均偏差値' : '目標達成度'}</div>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-4 text-center">
+                            <button
+                                onClick={() => setViewMode(prev => prev === 'standard' ? 'deviation' : 'standard')}
+                                className="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded transition"
+                            >
+                                {viewMode === 'standard' ? '📊 偏差値表示' : '📈 実値表示'}
+                            </button>
+                            <div className="text-gray-400 text-xs mt-1">表示切替</div>
+                        </div>
+                    </div>
+
+                    {/* メインコンテンツ */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        {/* 左：レーダーチャート */}
+                        <div className="bg-gray-800 rounded-lg p-4">
+                            <h2 className="text-xl font-bold mb-4 text-cyan-300">📊 国力プロファイル</h2>
+                            <ResponsiveContainer width="100%" height={350}>
+                                <RadarChart data={radarData}>
+                                    <PolarGrid stroke="#444" />
+                                    <PolarAngleAxis dataKey="axis" tick={{ fill: '#aaa', fontSize: 9 }} />
+                                    <PolarRadiusAxis angle={30} domain={[0, viewMode === 'deviation' ? 80 : 100]} tick={{ fill: '#666', fontSize: 8 }} />
+                                    <Radar name="現在" dataKey="current" stroke="#00ffff" fill="#00ffff" fillOpacity={0.3} strokeWidth={2} />
+                                    <Radar name="目標" dataKey="target" stroke="#ff6b6b" fill="transparent" strokeDasharray="5 5" />
+                                    <Radar name="初期" dataKey="initial" stroke="#888" fill="transparent" strokeDasharray="3 3" />
+                                    <Legend wrapperStyle={{ fontSize: '12px' }} />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* 中：年齢構成 */}
+                        <div className="bg-gray-800 rounded-lg p-4">
+                            <h2 className="text-xl font-bold mb-4 text-green-300">👥 年齢構成分析</h2>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={ageDistributionData} layout="horizontal">
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                                    <XAxis type="number" stroke="#888" />
+                                    <YAxis type="category" dataKey="name" tick={{ fill: '#aaa', fontSize: 11 }} width={60} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none' }} />
+                                    <Bar dataKey="value" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                            <div className="mt-4 text-xs text-gray-400">
+                                <p><strong>若手層不足リスク:</strong> {ageDistributionData[0]?.value < 100000 ? '⚠️ 高' : '✅ 低'}</p>
+                                <p><strong>技術継承性:</strong> 
+                                    {(ageDistributionData[2]?.value + ageDistributionData[3]?.value) / 
+                                     (ageDistributionData[0]?.value + ageDistributionData[1]?.value) > 0.3 ? '✅ 良好' : '⚠️ 要注意'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 右：セクター別人口 */}
+                        <div className="bg-gray-800 rounded-lg p-4">
+                            <h2 className="text-xl font-bold mb-4 text-purple-300">🏢 セクター別人口</h2>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={sectorPopulationData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                                    <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 10 }} />
+                                    <YAxis stroke="#888" />
+                                    <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none' }} />
+                                    <Bar dataKey="value" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                            <div className="mt-4 text-xs text-gray-400">
+                                <p><strong>産学比率:</strong> {(population.industry.total / population.university.total).toFixed(1)}:1</p>
+                                <p><strong>研究集約度:</strong> {((population.research.total + population.university.total) / 
+                                    Object.values(population).reduce((sum, s) => sum + s.total, 0) * 100).toFixed(1)}%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 政策パラメータ */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        
+                        {/* 政策設定 */}
+                        <div className="bg-gray-800 rounded-lg p-4">
+                            <h2 className="text-xl font-bold mb-4 text-orange-300">⚙️ 政策パラメータ</h2>
+                            {[
+                                { key: 'universityAdvancement', name: '🎓 大学進学率', unit: '%', range: [40, 80] },
+                                { key: 'masterAdvancement', name: '📚 修士進学率', unit: '%', range: [5, 25] },
+                                { key: 'doctoralAdvancement', name: '🎯 博士進学率', unit: '%', range: [3, 20] },
+                                { key: 'populationDecline', name: '📉 人口減少率', unit: '%/年', range: [0.5, 3] },
+                                { key: 'retirementAge', name: '👴 退職年齢', unit: '歳', range: [60, 70] },
+                                { key: 'techTransferRate', name: '🔄 技術移転率', unit: '%', range: [10, 50] },
+                            ].map(param => (
+                                <div key={param.key} className="mb-3">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm">{param.name}</span>
+                                        <span className="text-yellow-400 font-bold">{policyParams[param.key]}{param.unit}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={param.range[0]}
+                                        max={param.range[1]}
+                                        step={param.key === 'populationDecline' ? 0.1 : 1}
+                                        value={policyParams[param.key]}
+                                        onChange={(e) => setPolicyParams(prev => ({
+                                            ...prev, 
+                                            [param.key]: parseFloat(e.target.value)
+                                        }))}
+                                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* 投資配分 */}
+                        <div className="bg-gray-800 rounded-lg p-4">
+                            <h2 className="text-xl font-bold mb-4 text-green-300">💰 投資配分</h2>
+                            {[
+                                { key: 'university', icon: '🎓', name: '大学・研究', desc: '基礎研究・人材育成' },
+                                { key: 'industry', icon: '🏭', name: '産業界', desc: '実践技術・イノベーション' },
+                                { key: 'government', icon: '🏛️', name: '政府', desc: '政策立案・制度設計' },
+                                { key: 'research', icon: '🔬', name: '外部研究', desc: '先端技術・国際連携' },
+                            ].map(sector => (
+                                <div key={sector.key} className="mb-4">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm">{sector.icon} {sector.name}</span>
+                                        <span className="text-yellow-400 font-bold">{investments[sector.key]}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={investments[sector.key]}
+                                        onChange={(e) => setInvestments(prev => ({
+                                            ...prev, 
+                                            [sector.key]: parseInt(e.target.value)
+                                        }))}
+                                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                    />
+                                    <p className="text-gray-500 text-xs mt-1">{sector.desc}</p>
+                                </div>
+                            ))}
+                            <div className="text-right mt-4">
+                                <span className={`font-bold ${Object.values(investments).reduce((a,b) => a+b, 0) === 100 ? 'text-green-400' : 'text-red-400'}`}>
+                                    合計: {Object.values(investments).reduce((a,b) => a+b, 0)}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 時系列グラフ */}
+                    <div className="bg-gray-800 rounded-lg p-4 mt-6">
+                        <h2 className="text-xl font-bold mb-4 text-yellow-300">📈 長期トレンド分析</h2>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={history}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                                <XAxis dataKey="year" stroke="#888" />
+                                <YAxis domain={[0, viewMode === 'deviation' ? 80 : 100]} stroke="#888" />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#333', border: 'none' }}
+                                    labelStyle={{ color: '#fff' }}
+                                />
+                                <Legend />
+                                <Line type="monotone" dataKey="totalScore" stroke="#00ffff" strokeWidth={3} name="総合スコア" dot={false} />
+                                <Line type="monotone" dataKey="basicScience" stroke="#8884d8" strokeWidth={1} name="基礎科学" dot={false} />
+                                <Line type="monotone" dataKey="digitalAI" stroke="#ffc658" strokeWidth={1} name="デジタル・AI" dot={false} />
+                                <Line type="monotone" dataKey="innovation" stroke="#82ca9d" strokeWidth={1} name="イノベーション" dot={false} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* 人口推移 */}
+                    <div className="bg-gray-800 rounded-lg p-4 mt-6">
+                        <h2 className="text-xl font-bold mb-4 text-red-300">👥 人口動態推移</h2>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <AreaChart data={history}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                                <XAxis dataKey="year" stroke="#888" />
+                                <YAxis stroke="#888" />
+                                <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none' }} />
+                                <Area type="monotone" dataKey="population" stroke="#ff6b6b" fill="#ff6b6b" fillOpacity={0.3} name="総人口" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                        <div className="grid grid-cols-4 gap-4 mt-4 text-xs">
+                            {AGE_COHORTS.map(cohort => (
+                                <div key={cohort.key} className="text-center">
+                                    <div style={{ color: cohort.color }} className="font-bold">
+                                        {cohort.name}
+                                    </div>
+                                    <div className="text-gray-400">
+                                        {history.length > 0 ? 
+                                            Math.round(history[history.length - 1].populationByAge?.[cohort.key] / 1000) : 0}K人
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* コントロールボタン */}
+                    <div className="flex justify-center gap-4 mt-6 mb-8">
+                        <button
+                            onClick={simulateYear}
+                            disabled={isSimulating}
+                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition disabled:opacity-50"
+                        >
+                            ▶️ 1年進める
+                        </button>
+                        <button
+                            onClick={() => setIsSimulating(!isSimulating)}
+                            className={`px-6 py-3 rounded-lg font-bold transition ${isSimulating ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                        >
+                            {isSimulating ? '⏸️ 停止' : '⏩ 自動シミュレーション'}
+                        </button>
+                        <button
+                            onClick={resetSimulation}
+                            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-bold transition"
+                        >
+                            🔄 リセット
+                        </button>
+                    </div>
+
+                    {/* 分析サマリー */}
+                    <div className="bg-gray-800 rounded-lg p-4 mt-6">
+                        <h2 className="text-xl font-bold mb-4 text-cyan-300">📊 分析サマリー</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <h3 className="font-bold text-white mb-2">🎯 人材戦略</h3>
+                                <p className="text-gray-300">
+                                    現在の設定では、{year}年間で総人口は{' '}
+                                    {history.length > 0 ? 
+                                        ((Object.values(INITIAL_POPULATION).reduce((sum, s) => sum + s.total, 0) - 
+                                          Object.values(population).reduce((sum, s) => sum + s.total, 0)) / 
+                                         Object.values(INITIAL_POPULATION).reduce((sum, s) => sum + s.total, 0) * 100).toFixed(1) : 0
+                                    }%減少。
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white mb-2">⚡ 技術革新度</h3>
+                                <p className="text-gray-300">
+                                    デジタル・AI能力: {capability.digitalAI.toFixed(1)} 
+                                    (目標比: {(capability.digitalAI / targetCapability.digitalAI * 100).toFixed(0)}%)
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white mb-2">🔮 将来予測</h3>
+                                <p className="text-gray-300">
+                                    現在のペースでは目標達成まで{' '}
+                                    {Math.max(0, Math.ceil((100 - Object.values(capability).reduce((a,b) => a+b, 0) / CAPABILITY_AXES.length) / 2))}年必要。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
         }
 
-        // 1年分のシミュレーション
-        function simulateYear() {
-            // 大学投資効果
-            const uniEffect = investments.university / 100;
-            capability.basicScience += uniEffect * 3;
-            capability.education += uniEffect * 2;
-            capability.innovation += uniEffect * 1.5;
-            
-            // 産業界投資効果
-            const indEffect = investments.industry / 100;
-            capability.appliedTech += indEffect * 3;
-            capability.manufacturing += indEffect * 2.5;
-            capability.digitalAI += indEffect * 2;
-            capability.implementation += indEffect * 2;
-            
-            // 政府投資効果
-            const govEffect = investments.government / 100;
-            capability.policyMaking += govEffect * 3;
-            capability.finance += govEffect * 2;
-            
-            // 研究投資効果
-            const resEffect = investments.research / 100;
-            capability.globalCompete += resEffect * 3;
-            capability.healthcare += resEffect * 2;
-            capability.energy += resEffect * 2;
-            
-            // コホートからの貢献効果
-            SECTORS.forEach(sector => {
-                const sectorPop = getSectorPopulation(sector);
-                const contribution = sectorPop / 100000; // 人材数に応じた貢献
-                
-                if (sector === 'university') {
-                    capability.basicScience += contribution * 2;
-                    capability.education += contribution * 1.5;
-                } else if (sector === 'industry') {
-                    capability.appliedTech += contribution * 2;
-                    capability.manufacturing += contribution * 1.5;
-                    capability.implementation += contribution;
-                } else if (sector === 'government') {
-                    capability.policyMaking += contribution * 2;
-                    capability.finance += contribution;
-                } else if (sector === 'research') {
-                    capability.globalCompete += contribution * 2;
-                    capability.innovation += contribution;
-                }
-            });
-            
-            // 上限を100に制限
-            Object.keys(capability).forEach(key => {
-                capability[key] = Math.min(100, capability[key]);
-            });
-            
-            // コホート更新（年齢推移シミュレーション）
-            const newCohorts = {...cohorts};
-            
-            SECTORS.forEach(sector => {
-                const oldCohort = {...cohorts[sector]};
-                
-                // 年齢推移（簡略化）
-                newCohorts[sector]['20-29'] = Math.max(0, oldCohort['20-29'] * 0.95 + Math.floor(investments.university * 50));
-                newCohorts[sector]['30-39'] = Math.max(0, oldCohort['30-39'] * 0.98 + oldCohort['20-29'] * 0.05);
-                newCohorts[sector]['40-49'] = Math.max(0, oldCohort['40-49'] * 0.97 + oldCohort['30-39'] * 0.02);
-                newCohorts[sector]['50-59'] = Math.max(0, oldCohort['50-59'] * 0.95 + oldCohort['40-49'] * 0.03);
-                newCohorts[sector]['60+'] = Math.max(0, oldCohort['60+'] * 0.90 + oldCohort['50-59'] * 0.05);
-            });
-            
-            cohorts = newCohorts;
-            year++;
-            updateStats();
-            updateChart();
-            updateCohortDisplay();
-        }
-
-        // リセット
-        function resetSimulation() {
-            year = 0;
-            capability = {...initialCapability};
-            initializeCohorts();
-            updateStats();
-            updateChart();
-            updateCohortDisplay();
-        }
-
-        // スライダーイベント設定
-        function setupSliders() {
-            document.getElementById('uniSlider').addEventListener('input', (e) => {
-                investments.university = parseInt(e.target.value);
-                document.getElementById('uniLabel').textContent = `🎓 大学投資: ${investments.university}%`;
-            });
-
-            document.getElementById('indSlider').addEventListener('input', (e) => {
-                investments.industry = parseInt(e.target.value);
-                document.getElementById('indLabel').textContent = `🏭 産業投資: ${investments.industry}%`;
-            });
-
-            document.getElementById('govSlider').addEventListener('input', (e) => {
-                investments.government = parseInt(e.target.value);
-                document.getElementById('govLabel').textContent = `🏛️ 政府投資: ${investments.government}%`;
-            });
-
-            document.getElementById('resSlider').addEventListener('input', (e) => {
-                investments.research = parseInt(e.target.value);
-                document.getElementById('resLabel').textContent = `🔬 研究投資: ${investments.research}%`;
-            });
-        }
-
-        // 初期化
-        window.addEventListener('load', () => {
-            initializeCohorts();
-            setupSliders();
-            updateStats();
-            updateChart();
-            updateCohortDisplay();
-        });
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TalentDevelopmentSimulatorV3 />);
     </script>
 </body>
 </html>
