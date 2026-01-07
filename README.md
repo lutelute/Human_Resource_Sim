@@ -13,7 +13,7 @@
 
 **各バージョン直接リンク:**
 - [v1 (基本版)](https://lutelute.github.io/Human_Resource_Sim/v1/) - 投資配分・レーダーチャート
-- [v2 (個人モデル)](https://lutelute.github.io/Human_Resource_Sim/v2/) - 人材追跡・技術継承性
+- [v2 (個人モデル)](https://lutelute.github.io/Human_Resource_Sim/v2/talent-simulator-v2.html) - 人材追跡・技術継承性
 - [v3 (コホート版)](https://lutelute.github.io/Human_Resource_Sim/v3/) - 大規模シミュレーション・年齢分布
 
 ---
@@ -140,7 +140,7 @@ python -m http.server 8000
 
 **各バージョンへの直接アクセス:**
 - v1 (基本版): `http://localhost:8000/v1/`
-- v2 (個人モデル): `http://localhost:8000/v2/`  
+- v2 (個人モデル): `http://localhost:8000/v2/talent-simulator-v2.html`  
 - v3 (コホート版): `http://localhost:8000/v3/`
 
 ---
