@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国家人材育成シミュレーター v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #111827; color: white; }
+    .chart-container { position: relative; }
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 8px;
+      background: #374151;
+      border-radius: 4px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4">
+  <h1 class="text-3xl font-bold text-center mb-2 text-cyan-400">
+    🌏 国家人材育成シミュレーター v2
+  </h1>
+  <p class="text-center text-gray-400 mb-4">
+    個人別能力 × 技術継承性 × セクター在籍期間モデル
+  </p>
+
+  <!-- ステータスバー -->
+  <div class="grid grid-cols-5 gap-3 mb-6" id="status-bar">
+    <div class="bg-gray-800 rounded-lg p-3 text-center">
+      <div class="text-2xl font-bold text-yellow-400" id="year-display">0年目</div>
+      <div class="text-gray-400 text-xs">経過年数</div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-3 text-center">
+      <div class="text-2xl font-bold text-green-400" id="headcount-display">7</div>
+      <div class="text-gray-400 text-xs">総人材数</div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-3 text-center">
+      <div class="text-2xl font-bold text-blue-400" id="score-display">0</div>
+      <div class="text-gray-400 text-xs">総合国力</div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-3 text-center">
+      <div class="text-2xl font-bold text-purple-400" id="achievement-display">0%</div>
+      <div class="text-gray-400 text-xs">目標達成度</div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-3 text-center">
+      <div class="text-2xl font-bold text-orange-400" id="succession-display">0</div>
+      <div class="text-gray-400 text-xs">継承性スコア</div>
+    </div>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- 左：国力レーダーチャート -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-lg font-bold mb-2 text-cyan-300">📊 現在の国力</h2>
+      <div class="chart-container">
+        <canvas id="national-radar"></canvas>
+      </div>
+    </div>
+
+    <!-- 中央：将来予測 -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-lg font-bold mb-2 text-orange-300">🔮 将来予測</h2>
+      <div class="chart-container">
+        <canvas id="future-radar"></canvas>
+      </div>
+    </div>
+
+    <!-- 右：個人プロファイル -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-lg font-bold mb-2 text-pink-300">👤 個人プロファイル</h2>
+      <div id="person-info" class="hidden mb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl" id="person-icon">🎓</span>
+          <div>
+            <div class="font-bold" id="person-name"></div>
+            <div class="text-xs text-gray-400" id="person-detail"></div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="person-radar"></canvas>
+      </div>
+      <div id="no-person-selected" class="flex items-center justify-center h-64 text-gray-500">
+        下の人材リストから選択してください
+      </div>
+    </div>
+  </div>
+
+  <!-- 人材リスト & 在籍年数 -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+    <!-- 人材リスト -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-lg font-bold mb-3 text-green-300">👥 人材一覧（クリックで詳細）</h2>
+      <div class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto" id="person-list"></div>
+    </div>
+
+    <!-- 在籍年数バーチャート -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-lg font-bold mb-3 text-yellow-300">📅 在籍期間状況</h2>
+      <div class="chart-container" style="height: 250px;">
+        <canvas id="tenure-chart"></canvas>
+      </div>
+      <div class="mt-2 text-xs">
+        <div class="text-gray-400 mb-1">⚠️ 継承リスク:</div>
+        <div id="succession-risk" class="text-green-400">現在緊急の継承リスクなし</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 投資配分 & イベントログ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+    <!-- 投資配分 -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-lg font-bold mb-3 text-green-300">💰 セクター別投資配分</h2>
+      <div id="investment-controls"></div>
+      <div class="text-right mt-2">
+        <span id="investment-total" class="font-bold text-green-400">合計: 100%</span>
+      </div>
+    </div>
+
+    <!-- イベントログ -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-lg font-bold mb-3 text-purple-300">📋 イベントログ</h2>
+      <div class="space-y-2 max-h-48 overflow-y-auto" id="event-log">
+        <div class="text-gray-500 text-sm">シミュレーションを開始するとイベントが表示されます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 時系列グラフ -->
+  <div class="bg-gray-800 rounded-lg p-4 mt-4">
+    <h2 class="text-lg font-bold mb-3 text-yellow-300">📈 国力・継承性推移</h2>
+    <div class="chart-container" style="height: 200px;">
+      <canvas id="history-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- コントロールボタン -->
+  <div class="flex justify-center gap-4 mt-6 mb-4">
+    <button id="btn-step" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition">
+      ▶️ 1年進める
+    </button>
+    <button id="btn-auto" class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition">
+      ⏩ 自動実行
+    </button>
+    <button id="btn-reset" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-bold transition">
+      🔄 リセット
+    </button>
+  </div>
+
+  <!-- セクター別在籍期間モデル説明 -->
+  <div class="bg-gray-800 rounded-lg p-4 mt-4">
+    <h2 class="text-lg font-bold mb-3 text-cyan-300">📐 セクター別在籍期間モデル</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" id="tenure-model"></div>
+    <div class="mt-4 text-xs text-gray-400">
+      <p><strong>技術継承性スコア</strong> = f(年齢分布多様性, 在籍余裕度, メンタリング密度)</p>
+      <p class="mt-1">政界の短期サイクル（3年）と大学の長期安定（40年）の差が継承リスクに影響</p>
+    </div>
+  </div>
+
+<script>
+// ============ 定数・初期データ ============
+const CAPABILITY_AXES = [
+  { key: 'basicScience', name: '基礎科学', color: '#8884d8' },
+  { key: 'appliedTech', name: '応用技術', color: '#82ca9d' },
+  { key: 'digitalAI', name: 'デジタル・AI', color: '#ffc658' },
+  { key: 'manufacturing', name: '製造・ものづくり', color: '#ff7300' },
+  { key: 'finance', name: '金融・経済', color: '#00C49F' },
+  { key: 'energy', name: 'エネルギー・環境', color: '#FF8042' },
+  { key: 'globalCompete', name: '国際競争力', color: '#0088FE' },
+  { key: 'innovation', name: 'イノベーション', color: '#00C49F' },
+  { key: 'education', name: '教育基盤', color: '#FFBB28' },
+  { key: 'policyMaking', name: '政策立案', color: '#FF8042' },
+  { key: 'implementation', name: '社会実装力', color: '#8884d8' },
+  { key: 'succession', name: '技術継承性', color: '#9333ea' },
+];
+
+const SECTOR_TENURE = {
+  university_professor: { name: '大学教授', min: 30, max: 40, avg: 35 },
+  university_student_bachelor: { name: '学部生', min: 3, max: 4, avg: 4 },
+  university_student_master: { name: '修士', min: 1, max: 2, avg: 2 },
+  university_student_doctor: { name: '博士', min: 3, max: 5, avg: 3 },
+  industry_engineer: { name: '産業界エンジニア', min: 3, max: 5, avg: 4 },
+  government_official: { name: '政界・官僚', min: 2, max: 3, avg: 3 },
+  researcher: { name: '外部研究者', min: 5, max: 10, avg: 7 },
+};
+
+const targetCapability = {
+  basicScience: 85, appliedTech: 85, digitalAI: 90, manufacturing: 80,
+  finance: 75, energy: 80, globalCompete: 75, innovation: 85,
+  education: 80, policyMaking: 70, implementation: 80, succession: 85,
+};
+
+function createIndividual(id, name, sector, role, age, tenure, skills) {
+  return {
+    id, name, sector, role, age, tenure,
+    maxTenure: SECTOR_TENURE[role]?.avg || 5,
+    skills: { ...skills },
+  };
+}
+
+const initialIndividuals = [
+  createIndividual(1, '山田教授', 'university', 'university_professor', 55, 25, {
+    basicScience: 90, appliedTech: 60, digitalAI: 40, manufacturing: 30,
+    finance: 20, energy: 50, globalCompete: 70, innovation: 65,
+    education: 85, policyMaking: 40, implementation: 35, succession: 80,
+  }),
+  createIndividual(2, '鈴木助教', 'university', 'university_professor', 35, 5, {
+    basicScience: 70, appliedTech: 55, digitalAI: 65, manufacturing: 25,
+    finance: 15, energy: 40, globalCompete: 50, innovation: 60,
+    education: 50, policyMaking: 20, implementation: 30, succession: 40,
+  }),
+  createIndividual(3, '田中（修士）', 'university', 'university_student_master', 24, 1, {
+    basicScience: 45, appliedTech: 35, digitalAI: 50, manufacturing: 20,
+    finance: 10, energy: 25, globalCompete: 30, innovation: 40,
+    education: 15, policyMaking: 5, implementation: 15, succession: 10,
+  }),
+  createIndividual(4, '佐藤（若手SE）', 'industry', 'industry_engineer', 26, 2, {
+    basicScience: 30, appliedTech: 55, digitalAI: 70, manufacturing: 40,
+    finance: 25, energy: 20, globalCompete: 35, innovation: 45,
+    education: 10, policyMaking: 5, implementation: 60, succession: 15,
+  }),
+  createIndividual(5, '高橋（シニアEng）', 'industry', 'industry_engineer', 45, 4, {
+    basicScience: 40, appliedTech: 85, digitalAI: 60, manufacturing: 80,
+    finance: 35, energy: 45, globalCompete: 50, innovation: 55,
+    education: 30, policyMaking: 25, implementation: 85, succession: 70,
+  }),
+  createIndividual(6, '伊藤（中堅）', 'industry', 'industry_engineer', 35, 3, {
+    basicScience: 35, appliedTech: 70, digitalAI: 75, manufacturing: 55,
+    finance: 30, energy: 30, globalCompete: 40, innovation: 50,
+    education: 20, policyMaking: 15, implementation: 70, succession: 35,
+  }),
+  createIndividual(7, '渡辺（官僚）', 'government', 'government_official', 40, 2, {
+    basicScience: 25, appliedTech: 30, digitalAI: 35, manufacturing: 20,
+    finance: 70, energy: 55, globalCompete: 45, innovation: 30,
+    education: 25, policyMaking: 80, implementation: 60, succession: 25,
+  }),
+];
+
+// ============ 状態管理 ============
+let state = {
+  year: 0,
+  individuals: JSON.parse(JSON.stringify(initialIndividuals)),
+  capability: {},
+  history: [],
+  isSimulating: false,
+  events: [],
+  selectedPerson: null,
+  investments: { university: 30, industry: 35, government: 15, research: 20 },
+};
+
+// ============ Chart.js インスタンス ============
+let nationalRadarChart, futureRadarChart, personRadarChart, tenureChart, historyChart;
+
+// ============ 計算関数 ============
+function calculateNationalCapability(individuals) {
+  const capability = {};
+  CAPABILITY_AXES.forEach(axis => {
+    const values = individuals.map(ind => ind.skills[axis.key] || 0);
+    const sum = values.reduce((a, b) => a + Math.pow(b, 0.8), 0);
+    const ces = Math.pow(sum, 1/0.8) / individuals.length;
+    const min = Math.min(...values);
+    capability[axis.key] = ces * 0.7 + min * 0.3;
+  });
+  return capability;
+}
+
+function calculateSuccessionScore(individuals) {
+  let score = 0;
+  const sectors = ['university', 'industry', 'government'];
+  
+  sectors.forEach(sector => {
+    const sectorPeople = individuals.filter(i => i.sector === sector);
+    if (sectorPeople.length === 0) return;
+    
+    const ages = sectorPeople.map(p => p.age);
+    const ageRange = Math.max(...ages) - Math.min(...ages);
+    const ageScore = Math.min(40, ageRange) / 40 * 30;
+    
+    const tenureMargin = sectorPeople.reduce((sum, p) => {
+      return sum + Math.max(0, p.maxTenure - p.tenure) / p.maxTenure;
+    }, 0) / sectorPeople.length;
+    const tenureScore = tenureMargin * 40;
+    
+    const highSkillCount = sectorPeople.filter(p => 
+      Object.values(p.skills).reduce((a,b) => a+b, 0) / CAPABILITY_AXES.length > 50
+    ).length;
+    const mentorScore = (highSkillCount / sectorPeople.length) * 30;
+    
+    score += (ageScore + tenureScore + mentorScore) / 3;
+  });
+  
+  return score / sectors.length;
+}
+
+function calculateScore(cap) {
+  const values = Object.values(cap);
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const min = Math.min(...values);
+  return Math.round(avg * 0.6 + min * 0.4);
+}
+
+function calculateAchievement(cap) {
+  let dotProduct = 0, normCap = 0, normTarget = 0;
+  CAPABILITY_AXES.forEach(axis => {
+    dotProduct += (cap[axis.key] || 0) * targetCapability[axis.key];
+    normCap += (cap[axis.key] || 0) ** 2;
+    normTarget += targetCapability[axis.key] ** 2;
+  });
+  return (dotProduct / (Math.sqrt(normCap) * Math.sqrt(normTarget)) * 100).toFixed(1);
+}
+
+function predictFuture(years) {
+  const recentHistory = state.history.slice(-3);
+  if (recentHistory.length < 2) return state.capability;
+  
+  const trend = {};
+  CAPABILITY_AXES.forEach(axis => {
+    const values = recentHistory.map(h => h[axis.key] || 0);
+    const avgChange = (values[values.length - 1] - values[0]) / values.length;
+    trend[axis.key] = Math.max(0, Math.min(100, (state.capability[axis.key] || 0) + avgChange * years));
+  });
+  return trend;
+}
+
+// ============ シミュレーション ============
+function simulateYear() {
+  const newEvents = [];
+  
+  // スキル成長・加齢
+  state.individuals = state.individuals.map(person => {
+    const newPerson = { ...person, skills: { ...person.skills } };
+    newPerson.age += 1;
+    newPerson.tenure += 1;
+    
+    const sectorInvestment = state.investments[person.sector] || 20;
+    const growthRate = sectorInvestment / 100;
+    
+    CAPABILITY_AXES.forEach(axis => {
+      let growth = 0;
+      
+      if (person.sector === 'university') {
+        if (['basicScience', 'education', 'innovation'].includes(axis.key)) {
+          growth = growthRate * 3 * (person.role.includes('professor') ? 1.5 : 1);
+        }
+      } else if (person.sector === 'industry') {
+        if (['appliedTech', 'manufacturing', 'digitalAI', 'implementation'].includes(axis.key)) {
+          growth = growthRate * 3.5;
+        }
+      } else if (person.sector === 'government') {
+        if (['policyMaking', 'finance'].includes(axis.key)) {
+          growth = growthRate * 2.5;
+        }
+      }
+      
+      const ageEfficiency = Math.max(0.3, 1 - (person.age - 22) / 60);
+      growth *= ageEfficiency;
+      
+      if (axis.key === 'succession') {
+        growth = person.tenure * 0.5 + (person.age > 40 ? 2 : 0);
+      }
+      
+      const decay = axis.key === 'digitalAI' ? 2 : 0.5;
+      newPerson.skills[axis.key] = Math.max(0, Math.min(100, 
+        newPerson.skills[axis.key] + growth - decay + (Math.random() - 0.5) * 2
+      ));
+    });
+    
+    return newPerson;
+  });
+  
+  // 退職・卒業イベント
+  state.individuals = state.individuals.filter(person => {
+    if (person.tenure >= person.maxTenure) {
+      if (person.role.includes('student')) {
+        newEvents.push(`📚 ${person.name} が卒業しました`);
+      } else if (person.role === 'government_official') {
+        newEvents.push(`🏛️ ${person.name} が異動しました（${person.tenure}年在籍）`);
+      } else if (person.age >= 65) {
+        newEvents.push(`🎓 ${person.name} が定年退職しました`);
+      }
+      return false;
+    }
+    return true;
+  });
+  
+  // 新規人材追加
+  if (Math.random() < 0.3) {
+    const newId = Math.max(...state.individuals.map(p => p.id), 0) + 1;
+    const roles = ['university_student_master', 'industry_engineer', 'government_official'];
+    const role = roles[Math.floor(Math.random() * roles.length)];
+    const sector = role.includes('university') ? 'university' : 
+                   role.includes('industry') ? 'industry' : 'government';
+    const baseSkills = {};
+    CAPABILITY_AXES.forEach(axis => {
+      baseSkills[axis.key] = 20 + Math.random() * 30;
+    });
+    
+    const newPerson = createIndividual(
+      newId, `新人${newId}`, sector, role,
+      role.includes('student') ? 23 : 25 + Math.floor(Math.random() * 10),
+      0, baseSkills
+    );
+    state.individuals.push(newPerson);
+    newEvents.push(`✨ ${newPerson.name} が${sector === 'university' ? '大学' : sector === 'industry' ? '産業界' : '政府'}に加入`);
+  }
+  
+  state.events = [...newEvents, ...state.events].slice(0, 10);
+  state.year += 1;
+  
+  // 選択中の人物が退職していたら選択解除
+  if (state.selectedPerson && !state.individuals.find(p => p.id === state.selectedPerson.id)) {
+    state.selectedPerson = null;
+  } else if (state.selectedPerson) {
+    state.selectedPerson = state.individuals.find(p => p.id === state.selectedPerson.id);
+  }
+  
+  updateCapability();
+  updateUI();
+}
+
+function updateCapability() {
+  state.capability = calculateNationalCapability(state.individuals);
+  state.capability.succession = calculateSuccessionScore(state.individuals);
+  
+  state.history.push({
+    year: state.year,
+    ...state.capability,
+    totalScore: calculateScore(state.capability),
+    headcount: state.individuals.length,
+  });
+}
+
+// ============ UI更新 ============
+function updateUI() {
+  // ステータスバー
+  document.getElementById('year-display').textContent = `${state.year}年目`;
+  document.getElementById('headcount-display').textContent = state.individuals.length;
+  document.getElementById('score-display').textContent = calculateScore(state.capability);
+  document.getElementById('achievement-display').textContent = `${calculateAchievement(state.capability)}%`;
+  document.getElementById('succession-display').textContent = (state.capability.succession || 0).toFixed(0);
+  
+  // グラフ更新
+  updateNationalRadar();
+  updateFutureRadar();
+  updatePersonRadar();
+  updateTenureChart();
+  updateHistoryChart();
+  updatePersonList();
+  updateEventLog();
+  updateInvestmentTotal();
+  updateSuccessionRisk();
+}
+
+function updateNationalRadar() {
+  const labels = CAPABILITY_AXES.map(a => a.name);
+  const current = CAPABILITY_AXES.map(a => state.capability[a.key] || 0);
+  const target = CAPABILITY_AXES.map(a => targetCapability[a.key]);
+  
+  nationalRadarChart.data.labels = labels;
+  nationalRadarChart.data.datasets[0].data = current;
+  nationalRadarChart.data.datasets[1].data = target;
+  nationalRadarChart.update();
+}
+
+function updateFutureRadar() {
+  const future5 = predictFuture(5);
+  const future10 = predictFuture(10);
+  
+  const labels = CAPABILITY_AXES.map(a => a.name);
+  futureRadarChart.data.labels = labels;
+  futureRadarChart.data.datasets[0].data = CAPABILITY_AXES.map(a => state.capability[a.key] || 0);
+  futureRadarChart.data.datasets[1].data = CAPABILITY_AXES.map(a => future5[a.key] || 0);
+  futureRadarChart.data.datasets[2].data = CAPABILITY_AXES.map(a => future10[a.key] || 0);
+  futureRadarChart.data.datasets[3].data = CAPABILITY_AXES.map(a => targetCapability[a.key]);
+  futureRadarChart.update();
+}
+
+function updatePersonRadar() {
+  const noPersonEl = document.getElementById('no-person-selected');
+  const personInfoEl = document.getElementById('person-info');
+  const canvasEl = document.getElementById('person-radar');
+  
+  if (!state.selectedPerson) {
+    noPersonEl.classList.remove('hidden');
+    personInfoEl.classList.add('hidden');
+    canvasEl.classList.add('hidden');
+    return;
+  }
+  
+  noPersonEl.classList.add('hidden');
+  personInfoEl.classList.remove('hidden');
+  canvasEl.classList.remove('hidden');
+  
+  const p = state.selectedPerson;
+  document.getElementById('person-icon').textContent = 
+    p.sector === 'university' ? '🎓' : p.sector === 'industry' ? '🏭' : '🏛️';
+  document.getElementById('person-name').textContent = p.name;
+  document.getElementById('person-detail').textContent = 
+    `${p.age}歳 / 在籍${p.tenure}年 (残${Math.max(0, p.maxTenure - p.tenure)}年)`;
+  
+  const labels = CAPABILITY_AXES.map(a => a.name);
+  const values = CAPABILITY_AXES.map(a => p.skills[a.key] || 0);
+  const target = CAPABILITY_AXES.map(a => targetCapability[a.key] * 0.8);
+  
+  const sectorColor = p.sector === 'university' ? '#8b5cf6' : 
+                      p.sector === 'industry' ? '#3b82f6' : '#10b981';
+  
+  personRadarChart.data.labels = labels;
+  personRadarChart.data.datasets[0].data = values;
+  personRadarChart.data.datasets[0].borderColor = sectorColor;
+  personRadarChart.data.datasets[0].backgroundColor = sectorColor + '40';
+  personRadarChart.data.datasets[1].data = target;
+  personRadarChart.update();
+}
+
+function updateTenureChart() {
+  const labels = state.individuals.map(p => p.name.slice(0, 4));
+  const tenure = state.individuals.map(p => p.tenure);
+  const remaining = state.individuals.map(p => Math.max(0, p.maxTenure - p.tenure));
+  
+  tenureChart.data.labels = labels;
+  tenureChart.data.datasets[0].data = tenure;
+  tenureChart.data.datasets[1].data = remaining;
+  tenureChart.update();
+}
+
+function updateHistoryChart() {
+  const labels = state.history.map(h => h.year);
+  historyChart.data.labels = labels;
+  historyChart.data.datasets[0].data = state.history.map(h => h.totalScore);
+  historyChart.data.datasets[1].data = state.history.map(h => h.succession || 0);
+  historyChart.data.datasets[2].data = state.history.map(h => h.basicScience || 0);
+  historyChart.data.datasets[3].data = state.history.map(h => h.implementation || 0);
+  historyChart.update();
+}
+
+function updatePersonList() {
+  const listEl = document.getElementById('person-list');
+  listEl.innerHTML = state.individuals.map(person => {
+    const isSelected = state.selectedPerson?.id === person.id;
+    const icon = person.sector === 'university' ? '🎓' : person.sector === 'industry' ? '🏭' : '🏛️';
+    const roleName = SECTOR_TENURE[person.role]?.name || person.role;
+    const nearRetire = person.tenure >= person.maxTenure - 1;
+    
+    return `
+      <div class="flex items-center justify-between p-2 rounded cursor-pointer transition
+        ${isSelected ? 'bg-gray-600 ring-2 ring-cyan-400' : 'bg-gray-700 hover:bg-gray-600'}"
+        onclick="selectPerson(${person.id})">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">${icon}</span>
+          <div>
+            <div class="font-medium text-sm">${person.name}</div>
+            <div class="text-xs text-gray-400">${roleName}</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-sm">${person.age}歳</div>
+          <div class="text-xs text-gray-400">在籍 ${person.tenure}/${person.maxTenure}年</div>
+          ${nearRetire ? '<span class="text-xs text-red-400">⚠️退職間近</span>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateEventLog() {
+  const logEl = document.getElementById('event-log');
+  if (state.events.length === 0) {
+    logEl.innerHTML = '<div class="text-gray-500 text-sm">シミュレーションを開始するとイベントが表示されます</div>';
+  } else {
+    logEl.innerHTML = state.events.map(event => 
+      `<div class="text-sm text-gray-300 bg-gray-700 rounded p-2">${event}</div>`
+    ).join('');
+  }
+}
+
+function updateInvestmentTotal() {
+  const total = Object.values(state.investments).reduce((a, b) => a + b, 0);
+  const el = document.getElementById('investment-total');
+  el.textContent = `合計: ${total}%`;
+  el.className = `font-bold ${total === 100 ? 'text-green-400' : 'text-red-400'}`;
+}
+
+function updateSuccessionRisk() {
+  const atRisk = state.individuals.filter(p => p.tenure >= p.maxTenure - 2);
+  const riskEl = document.getElementById('succession-risk');
+  if (atRisk.length > 0) {
+    riskEl.className = 'text-red-400';
+    riskEl.textContent = `${atRisk.map(p => p.name).join(', ')} が2年以内に退職予定`;
+  } else {
+    riskEl.className = 'text-green-400';
+    riskEl.textContent = '現在緊急の継承リスクなし';
+  }
+}
+
+function selectPerson(id) {
+  state.selectedPerson = state.individuals.find(p => p.id === id) || null;
+  updatePersonRadar();
+  updatePersonList();
+}
+
+// ============ 初期化 ============
+function initCharts() {
+  const radarOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 100,
+        ticks: { color: '#666', font: { size: 8 } },
+        grid: { color: '#444' },
+        angleLines: { color: '#444' },
+        pointLabels: { color: '#aaa', font: { size: 9 } }
+      }
+    },
+    plugins: { legend: { labels: { color: '#ccc', font: { size: 11 } } } }
+  };
+  
+  // 国力レーダー
+  nationalRadarChart = new Chart(document.getElementById('national-radar'), {
+    type: 'radar',
+    data: {
+      labels: CAPABILITY_AXES.map(a => a.name),
+      datasets: [
+        { label: '現在', data: [], borderColor: '#00ffff', backgroundColor: '#00ffff30', borderWidth: 2 },
+        { label: '目標', data: [], borderColor: '#ff6b6b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [5, 5] }
+      ]
+    },
+    options: radarOptions
+  });
+  
+  // 将来予測レーダー
+  futureRadarChart = new Chart(document.getElementById('future-radar'), {
+    type: 'radar',
+    data: {
+      labels: CAPABILITY_AXES.map(a => a.name),
+      datasets: [
+        { label: '現在', data: [], borderColor: '#00ffff', backgroundColor: '#00ffff10', borderWidth: 1 },
+        { label: '5年後', data: [], borderColor: '#ffd700', backgroundColor: '#ffd70020', borderWidth: 2 },
+        { label: '10年後', data: [], borderColor: '#ff4500', backgroundColor: '#ff450020', borderWidth: 2 },
+        { label: '目標', data: [], borderColor: '#888', backgroundColor: 'transparent', borderWidth: 1, borderDash: [3, 3] }
+      ]
+    },
+    options: radarOptions
+  });
+  
+  // 個人レーダー
+  personRadarChart = new Chart(document.getElementById('person-radar'), {
+    type: 'radar',
+    data: {
+      labels: CAPABILITY_AXES.map(a => a.name),
+      datasets: [
+        { label: '能力', data: [], borderColor: '#8b5cf6', backgroundColor: '#8b5cf640', borderWidth: 2 },
+        { label: '目標', data: [], borderColor: '#888', backgroundColor: 'transparent', borderWidth: 1, borderDash: [3, 3] }
+      ]
+    },
+    options: radarOptions
+  });
+  
+  // 在籍年数チャート
+  tenureChart = new Chart(document.getElementById('tenure-chart'), {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [
+        { label: '在籍年数', data: [], backgroundColor: '#3b82f6' },
+        { label: '残り期間', data: [], backgroundColor: '#374151' }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, max: 40, ticks: { color: '#888' }, grid: { color: '#444' } },
+        y: { stacked: true, ticks: { color: '#aaa', font: { size: 10 } }, grid: { display: false } }
+      },
+      plugins: { legend: { labels: { color: '#ccc' } } }
+    }
+  });
+  
+  // 時系列チャート
+  historyChart = new Chart(document.getElementById('history-chart'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: '総合スコア', data: [], borderColor: '#00ffff', borderWidth: 3, pointRadius: 0 },
+        { label: '技術継承性', data: [], borderColor: '#9333ea', borderWidth: 2, pointRadius: 0 },
+        { label: '基礎科学', data: [], borderColor: '#8884d8', borderWidth: 1, pointRadius: 0 },
+        { label: '社会実装力', data: [], borderColor: '#82ca9d', borderWidth: 1, pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#888' }, grid: { color: '#444' } },
+        y: { min: 0, max: 100, ticks: { color: '#888' }, grid: { color: '#444' } }
+      },
+      plugins: { legend: { labels: { color: '#ccc' } } }
+    }
+  });
+}
+
+function initInvestmentControls() {
+  const sectors = [
+    { key: 'university', icon: '🎓', name: '大学（基礎・教育）', tenure: '教授40年/学生2-6年' },
+    { key: 'industry', icon: '🏭', name: '産業界（実践技術）', tenure: '3-5年サイクル' },
+    { key: 'government', icon: '🏛️', name: '政府（政策）', tenure: '3年交代' },
+    { key: 'research', icon: '🔬', name: '外部研究（先端）', tenure: '5-10年' },
+  ];
+  
+  document.getElementById('investment-controls').innerHTML = sectors.map(s => `
+    <div class="mb-3">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-sm">${s.icon} ${s.name}</span>
+        <span class="text-yellow-400 font-bold" id="inv-${s.key}-value">${state.investments[s.key]}%</span>
+      </div>
+      <input type="range" min="0" max="100" value="${state.investments[s.key]}"
+        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+        oninput="updateInvestment('${s.key}', this.value)">
+      <p class="text-gray-500 text-xs">${s.tenure}</p>
+    </div>
+  `).join('');
+}
+
+function initTenureModel() {
+  document.getElementById('tenure-model').innerHTML = Object.entries(SECTOR_TENURE).map(([key, value]) => `
+    <div class="bg-gray-700 rounded p-3">
+      <div class="font-bold text-white">${value.name}</div>
+      <div class="text-gray-400 mt-1">在籍: ${value.min}〜${value.max}年</div>
+      <div class="text-xs text-gray-500">平均: ${value.avg}年</div>
+    </div>
+  `).join('');
+}
+
+function updateInvestment(key, value) {
+  state.investments[key] = parseInt(value);
+  document.getElementById(`inv-${key}-value`).textContent = `${value}%`;
+  updateInvestmentTotal();
+}
+
+function resetSimulation() {
+  state = {
+    year: 0,
+    individuals: JSON.parse(JSON.stringify(initialIndividuals)),
+    capability: {},
+    history: [],
+    isSimulating: false,
+    events: [],
+    selectedPerson: null,
+    investments: { university: 30, industry: 35, government: 15, research: 20 },
+  };
+  updateCapability();
+  initInvestmentControls();
+  updateUI();
+  
+  document.getElementById('btn-auto').textContent = '⏩ 自動実行';
+  document.getElementById('btn-auto').classList.remove('bg-red-600', 'hover:bg-red-700');
+  document.getElementById('btn-auto').classList.add('bg-green-600', 'hover:bg-green-700');
+}
+
+let autoInterval = null;
+
+function toggleAuto() {
+  state.isSimulating = !state.isSimulating;
+  const btn = document.getElementById('btn-auto');
+  
+  if (state.isSimulating) {
+    btn.textContent = '⏸️ 停止';
+    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+    btn.classList.add('bg-red-600', 'hover:bg-red-700');
+    autoInterval = setInterval(() => {
+      if (state.year >= 20) {
+        toggleAuto();
+        return;
+      }
+      simulateYear();
+    }, 800);
+  } else {
+    btn.textContent = '⏩ 自動実行';
+    btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+    btn.classList.add('bg-green-600', 'hover:bg-green-700');
+    if (autoInterval) {
+      clearInterval(autoInterval);
+      autoInterval = null;
+    }
+  }
+}
+
+// ============ イベントバインド ============
+document.getElementById('btn-step').addEventListener('click', simulateYear);
+document.getElementById('btn-auto').addEventListener('click', toggleAuto);
+document.getElementById('btn-reset').addEventListener('click', resetSimulation);
+
+// ============ 起動 ============
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  initInvestmentControls();
+  initTenureModel();
+  updateCapability();
+  updateUI();
+});
+</script>
+</body>
+</html>
