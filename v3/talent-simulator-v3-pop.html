@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国家人材育成シミュレーター v3 - 人口統計連動</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #111827; color: white; }
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 6px;
+      background: #374151;
+      border-radius: 4px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-3">
+  <h1 class="text-2xl font-bold text-center mb-1 text-cyan-400">🌏 国家人材育成シミュレーター v3</h1>
+  <p class="text-center text-gray-400 text-sm mb-3" id="subtitle">人口統計連動 | 2024年 | 0万人</p>
+
+  <!-- ステータスバー -->
+  <div class="grid grid-cols-6 gap-2 mb-4">
+    <div class="bg-gray-800 rounded p-2 text-center">
+      <div class="text-xl font-bold text-yellow-400" id="year-display">2024</div>
+      <div class="text-gray-400 text-xs">年</div>
+    </div>
+    <div class="bg-gray-800 rounded p-2 text-center">
+      <div class="text-xl font-bold text-cyan-400" id="talent-display">0万</div>
+      <div class="text-gray-400 text-xs">総人材</div>
+    </div>
+    <div class="bg-gray-800 rounded p-2 text-center">
+      <div class="text-xl font-bold text-blue-400" id="raw-score">0</div>
+      <div class="text-gray-400 text-xs">国力(実値)</div>
+    </div>
+    <div class="bg-gray-800 rounded p-2 text-center">
+      <div class="text-xl font-bold text-purple-400" id="norm-score">0</div>
+      <div class="text-gray-400 text-xs">国力(偏差値)</div>
+    </div>
+    <div class="bg-gray-800 rounded p-2 text-center">
+      <div class="text-xl font-bold text-red-400" id="pop-factor">100%</div>
+      <div class="text-gray-400 text-xs">人口係数</div>
+    </div>
+    <div class="bg-gray-800 rounded p-2 text-center">
+      <button id="view-toggle" class="text-xs px-2 py-1 rounded bg-purple-600">偏差値</button>
+    </div>
+  </div>
+
+  <!-- 人口統計パネル -->
+  <div class="bg-gray-800 rounded p-3 mb-4">
+    <h2 class="text-sm font-bold mb-2 text-green-300">📊 人口統計・流入パラメータ</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-gray-700 rounded p-2">
+        <div class="text-xs text-gray-400 mb-1">18歳人口（大学世代）</div>
+        <div class="text-lg font-bold text-cyan-400" id="pop18">110.0万人</div>
+        <div class="text-xs text-gray-500" id="pop18-detail">基準: 110万 × 100%</div>
+      </div>
+      <div class="bg-gray-700 rounded p-2">
+        <div class="text-xs text-gray-400 mb-1">年間大学入学者</div>
+        <div class="text-lg font-bold text-blue-400" id="uni-entrants">61.6万人</div>
+        <div class="text-xs text-gray-500">進学率: 56%</div>
+      </div>
+      <div class="bg-gray-700 rounded p-2">
+        <div class="text-xs text-gray-400 mb-1">年間修士入学</div>
+        <div class="text-lg font-bold text-purple-400" id="master-inflow">0千人</div>
+      </div>
+      <div class="bg-gray-700 rounded p-2">
+        <div class="text-xs text-gray-400 mb-1">年間博士修了</div>
+        <div class="text-lg font-bold text-orange-400" id="phd-graduates">0千人</div>
+      </div>
+    </div>
+    
+    <!-- 進学率調整 -->
+    <div class="grid grid-cols-3 gap-4 mt-3">
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span>修士進学率</span>
+          <span class="text-yellow-400" id="master-rate-val">12%</span>
+        </div>
+        <input type="range" min="5" max="30" value="12" class="w-full" id="master-rate">
+      </div>
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span>博士進学率</span>
+          <span class="text-yellow-400" id="phd-rate-val">10%</span>
+        </div>
+        <input type="range" min="3" max="25" value="10" class="w-full" id="phd-rate">
+      </div>
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span>博士→アカデミア</span>
+          <span class="text-yellow-400" id="phd-academia-val">18%</span>
+        </div>
+        <input type="range" min="10" max="40" value="18" class="w-full" id="phd-academia">
+      </div>
+    </div>
+    
+    <!-- セクター別年間流入 -->
+    <div class="grid grid-cols-4 gap-2 mt-3" id="sector-inflow"></div>
+  </div>
+
+  <!-- レーダーチャート -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+    <div class="bg-gray-800 rounded p-3">
+      <h2 class="text-sm font-bold mb-1 text-cyan-300">📊 現在の国力</h2>
+      <canvas id="current-radar" height="250"></canvas>
+    </div>
+    <div class="bg-gray-800 rounded p-3">
+      <h2 class="text-sm font-bold mb-1 text-orange-300">🔮 5年後・10年後</h2>
+      <canvas id="future-radar" height="250"></canvas>
+    </div>
+    <div class="bg-gray-800 rounded p-3">
+      <h2 class="text-sm font-bold mb-1 text-green-300">👥 セクター別人員</h2>
+      <canvas id="sector-chart" height="250"></canvas>
+    </div>
+  </div>
+
+  <!-- 投資 & 継承性 -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+    <div class="bg-gray-800 rounded p-3">
+      <h2 class="text-sm font-bold mb-2 text-green-300">💰 投資配分</h2>
+      <div id="investment-controls"></div>
+      <div class="flex justify-between mt-2 text-sm">
+        <span>合計:</span>
+        <span id="inv-total" class="text-green-400">100%</span>
+      </div>
+    </div>
+    <div class="bg-gray-800 rounded p-3">
+      <h2 class="text-sm font-bold mb-2 text-orange-300">📊 継承性 & 人口推移</h2>
+      <div id="succession-bars"></div>
+      <div class="mt-3 pt-2 border-t border-gray-700">
+        <div class="text-xs text-gray-400 mb-1">年間流入推移</div>
+        <canvas id="inflow-mini" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 時系列グラフ -->
+  <div class="bg-gray-800 rounded p-3 mb-4">
+    <h2 class="text-sm font-bold mb-2 text-yellow-300">📈 推移グラフ</h2>
+    <div style="height: 180px;"><canvas id="history-chart"></canvas></div>
+  </div>
+
+  <!-- コントロール -->
+  <div class="flex justify-center gap-3 mb-4">
+    <button id="btn-step" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 rounded font-bold transition">▶️ 1年進める</button>
+    <button id="btn-auto" class="px-5 py-2 bg-green-600 hover:bg-green-700 rounded font-bold transition">⏩ 自動実行</button>
+    <button id="btn-reset" class="px-5 py-2 bg-gray-600 hover:bg-gray-700 rounded font-bold transition">🔄 リセット</button>
+  </div>
+
+  <!-- 人口統計モデル説明 -->
+  <div class="bg-gray-800 rounded p-3">
+    <h2 class="text-sm font-bold mb-2 text-cyan-300">📐 人口統計モデル</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-300">
+      <div class="bg-gray-700 p-2 rounded">
+        <div class="font-bold text-white">人口減少</div>
+        <div class="font-mono mt-1">P(t) = P₀ × (1-r)^t</div>
+        <div class="text-gray-400 mt-1">r = 1.2%/年</div>
+      </div>
+      <div class="bg-gray-700 p-2 rounded">
+        <div class="font-bold text-white">進学フロー</div>
+        <div class="font-mono mt-1">学部→修士: 12%</div>
+        <div class="text-gray-400 mt-1">修士→博士: 10%</div>
+      </div>
+      <div class="bg-gray-700 p-2 rounded">
+        <div class="font-bold text-white">博士進路</div>
+        <div class="text-gray-400 mt-1">アカデミア: 18%<br>産業界: 42%<br>研究機関: 30%</div>
+      </div>
+      <div class="bg-gray-700 p-2 rounded">
+        <div class="font-bold text-white">将来予測</div>
+        <div class="text-gray-400 mt-1">2030: 95%<br>2040: 84%<br>2050: 72%</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ============ 定数 ============
+const POPULATION_STATS = {
+  baseYear: 2024,
+  agePopulation: { age18: 110, age22: 115, age24: 118, age27: 120 },
+  rates: {
+    universityEnrollment: 0.56,
+    masterEnrollment: 0.12,
+    phdEnrollment: 0.10,
+    phdToAcademia: 0.18,
+    phdToIndustry: 0.42,
+    phdToResearch: 0.30,
+    masterToIndustry: 0.75,
+    masterToGov: 0.12,
+    bachelorToIndustry: 0.82,
+    bachelorToGov: 0.08,
+  },
+  projections: { 2025: 0.99, 2030: 0.95, 2035: 0.90, 2040: 0.84, 2045: 0.78, 2050: 0.72 },
+  annualDeclineRate: 0.012,
+};
+
+const CAPABILITY_AXES = [
+  { key: 'basicScience', name: '基礎科学', short: '基礎' },
+  { key: 'appliedTech', name: '応用技術', short: '応用' },
+  { key: 'digitalAI', name: 'デジタル・AI', short: 'DX/AI' },
+  { key: 'manufacturing', name: '製造・ものづくり', short: '製造' },
+  { key: 'finance', name: '金融・経済', short: '金融' },
+  { key: 'energy', name: 'エネルギー・環境', short: 'エネ' },
+  { key: 'globalCompete', name: '国際競争力', short: '国際' },
+  { key: 'innovation', name: 'イノベーション', short: '革新' },
+  { key: 'education', name: '教育基盤', short: '教育' },
+  { key: 'policyMaking', name: '政策立案', short: '政策' },
+  { key: 'implementation', name: '社会実装力', short: '実装' },
+  { key: 'succession', name: '技術継承性', short: '継承' },
+];
+
+const SECTORS = {
+  university: { name: '大学', icon: '🎓', color: '#8b5cf6' },
+  industry: { name: '産業界', icon: '🏭', color: '#3b82f6' },
+  government: { name: '政府', icon: '🏛️', color: '#10b981' },
+  research: { name: '研究機関', icon: '🔬', color: '#f59e0b' },
+};
+
+const TARGET_CAPABILITY = {
+  basicScience: 80, appliedTech: 82, digitalAI: 85, manufacturing: 78,
+  finance: 72, energy: 78, globalCompete: 75, innovation: 80,
+  education: 78, policyMaking: 70, implementation: 80, succession: 82,
+};
+
+// 初期コホート
+function createInitialCohorts() {
+  return [
+    { id: 'prof_senior', sector: 'university', role: 'シニア教授', count: 3000, avgAge: 58, avgTenure: 28, maxTenure: 40,
+      skills: { basicScience: 85, appliedTech: 55, digitalAI: 35, manufacturing: 30, finance: 25, energy: 50, globalCompete: 65, innovation: 60, education: 80, policyMaking: 45, implementation: 35, succession: 75 }},
+    { id: 'prof_mid', sector: 'university', role: '中堅教授', count: 2000, avgAge: 45, avgTenure: 15, maxTenure: 40,
+      skills: { basicScience: 75, appliedTech: 50, digitalAI: 45, manufacturing: 28, finance: 22, energy: 45, globalCompete: 55, innovation: 55, education: 70, policyMaking: 35, implementation: 30, succession: 55 }},
+    { id: 'assist_prof', sector: 'university', role: '助教・ポスドク', count: 10000, avgAge: 33, avgTenure: 4, maxTenure: 15,
+      skills: { basicScience: 65, appliedTech: 45, digitalAI: 55, manufacturing: 25, finance: 18, energy: 40, globalCompete: 45, innovation: 50, education: 45, policyMaking: 20, implementation: 25, succession: 30 }},
+    { id: 'phd_student', sector: 'university', role: '博士課程', count: 15000, avgAge: 27, avgTenure: 2, maxTenure: 5,
+      skills: { basicScience: 55, appliedTech: 40, digitalAI: 50, manufacturing: 22, finance: 15, energy: 35, globalCompete: 35, innovation: 45, education: 25, policyMaking: 12, implementation: 20, succession: 15 }},
+    { id: 'master_student', sector: 'university', role: '修士課程', count: 30000, avgAge: 24, avgTenure: 1, maxTenure: 2,
+      skills: { basicScience: 45, appliedTech: 35, digitalAI: 45, manufacturing: 20, finance: 12, energy: 28, globalCompete: 28, innovation: 38, education: 15, policyMaking: 8, implementation: 15, succession: 8 }},
+    { id: 'ind_senior', sector: 'industry', role: 'シニアエンジニア', count: 50000, avgAge: 52, avgTenure: 4, maxTenure: 5,
+      skills: { basicScience: 40, appliedTech: 82, digitalAI: 55, manufacturing: 78, finance: 40, energy: 50, globalCompete: 50, innovation: 55, education: 35, policyMaking: 30, implementation: 80, succession: 65 }},
+    { id: 'ind_mid', sector: 'industry', role: '中堅エンジニア', count: 150000, avgAge: 38, avgTenure: 3, maxTenure: 5,
+      skills: { basicScience: 35, appliedTech: 70, digitalAI: 65, manufacturing: 68, finance: 35, energy: 42, globalCompete: 42, innovation: 50, education: 25, policyMaking: 22, implementation: 72, succession: 40 }},
+    { id: 'ind_junior', sector: 'industry', role: '若手エンジニア', count: 100000, avgAge: 28, avgTenure: 2, maxTenure: 5,
+      skills: { basicScience: 32, appliedTech: 55, digitalAI: 68, manufacturing: 50, finance: 28, energy: 35, globalCompete: 38, innovation: 48, education: 15, policyMaking: 12, implementation: 58, succession: 18 }},
+    { id: 'gov_executive', sector: 'government', role: '幹部官僚', count: 5000, avgAge: 55, avgTenure: 2, maxTenure: 3,
+      skills: { basicScience: 30, appliedTech: 35, digitalAI: 32, manufacturing: 25, finance: 72, energy: 55, globalCompete: 55, innovation: 35, education: 30, policyMaking: 85, implementation: 65, succession: 30 }},
+    { id: 'gov_mid', sector: 'government', role: '中堅官僚', count: 20000, avgAge: 42, avgTenure: 2, maxTenure: 3,
+      skills: { basicScience: 28, appliedTech: 32, digitalAI: 38, manufacturing: 22, finance: 62, energy: 48, globalCompete: 45, innovation: 32, education: 28, policyMaking: 72, implementation: 58, succession: 25 }},
+    { id: 'gov_junior', sector: 'government', role: '若手官僚', count: 25000, avgAge: 30, avgTenure: 1, maxTenure: 3,
+      skills: { basicScience: 35, appliedTech: 38, digitalAI: 48, manufacturing: 20, finance: 52, energy: 40, globalCompete: 42, innovation: 38, education: 22, policyMaking: 55, implementation: 48, succession: 15 }},
+    { id: 'res_senior', sector: 'research', role: 'シニア研究者', count: 10000, avgAge: 52, avgTenure: 7, maxTenure: 10,
+      skills: { basicScience: 78, appliedTech: 65, digitalAI: 58, manufacturing: 35, finance: 28, energy: 65, globalCompete: 72, innovation: 68, education: 55, policyMaking: 42, implementation: 48, succession: 58 }},
+    { id: 'res_mid', sector: 'research', role: '中堅研究者', count: 25000, avgAge: 40, avgTenure: 5, maxTenure: 10,
+      skills: { basicScience: 68, appliedTech: 58, digitalAI: 62, manufacturing: 32, finance: 25, energy: 58, globalCompete: 62, innovation: 62, education: 42, policyMaking: 35, implementation: 42, succession: 42 }},
+    { id: 'res_junior', sector: 'research', role: '若手研究者', count: 15000, avgAge: 32, avgTenure: 3, maxTenure: 10,
+      skills: { basicScience: 58, appliedTech: 50, digitalAI: 65, manufacturing: 28, finance: 22, energy: 48, globalCompete: 52, innovation: 55, education: 32, policyMaking: 25, implementation: 35, succession: 25 }},
+  ];
+}
+
+const TRANSITION_MATRIX = {
+  master_student: { phd_student: 0.10, exit: 0.90 },
+  phd_student: { assist_prof: 0.18, exit: 0.82 },
+  assist_prof: { prof_mid: 0.08, ind_mid: 0.10, res_mid: 0.08, exit: 0.05 },
+  prof_mid: { prof_senior: 0.05, exit: 0.02 },
+  prof_senior: { retire: 0.03 },
+  ind_junior: { ind_mid: 0.20, exit: 0.12 },
+  ind_mid: { ind_senior: 0.12, exit: 0.08 },
+  ind_senior: { retire: 0.08, exit: 0.05 },
+  gov_junior: { gov_mid: 0.28, exit: 0.08 },
+  gov_mid: { gov_executive: 0.08, exit: 0.10 },
+  gov_executive: { retire: 0.18, exit: 0.08 },
+  res_junior: { res_mid: 0.15, exit: 0.06 },
+  res_mid: { res_senior: 0.10, exit: 0.04 },
+  res_senior: { retire: 0.05, exit: 0.03 },
+};
+
+// ============ 状態 ============
+let state = {
+  year: 0,
+  cohorts: createInitialCohorts(),
+  history: [],
+  inflowHistory: [],
+  isSimulating: false,
+  viewMode: 'normalized',
+  investments: { university: 30, industry: 35, government: 15, research: 20 },
+  popParams: { masterEnrollment: 12, phdEnrollment: 10, phdToAcademia: 18 },
+};
+
+// ============ チャート ============
+let currentRadarChart, futureRadarChart, sectorChart, historyChart, inflowMiniChart;
+
+// ============ 計算関数 ============
+function calculateAnnualInflow(year, stats, customRates = {}) {
+  const rates = { ...stats.rates, ...customRates };
+  const currentYear = stats.baseYear + year;
+  
+  let declineFactor = 1;
+  const projYears = Object.keys(stats.projections).map(Number).sort((a, b) => a - b);
+  for (let i = projYears.length - 1; i >= 0; i--) {
+    if (currentYear >= projYears[i]) { declineFactor = stats.projections[projYears[i]]; break; }
+  }
+  if (declineFactor === 1 && year > 0) declineFactor = Math.pow(1 - stats.annualDeclineRate, year);
+  
+  const pop18 = stats.agePopulation.age18 * 10000 * declineFactor;
+  const pop22 = stats.agePopulation.age22 * 10000 * declineFactor;
+  
+  const universityEntrants = pop18 * rates.universityEnrollment;
+  const bachelorGraduates = pop22 * rates.universityEnrollment * 0.90;
+  const masterEntrants = bachelorGraduates * rates.masterEnrollment;
+  const masterGraduates = masterEntrants * 0.92;
+  const phdEntrants = masterGraduates * rates.phdEnrollment;
+  const phdGraduates = phdEntrants * 0.70;
+  
+  return {
+    master_student: Math.round(masterEntrants),
+    phd_student: Math.round(phdEntrants),
+    assist_prof: Math.round(phdGraduates * rates.phdToAcademia),
+    ind_junior_from_bachelor: Math.round((bachelorGraduates - masterEntrants) * rates.bachelorToIndustry),
+    ind_junior_from_master: Math.round(masterGraduates * (1 - rates.phdEnrollment) * rates.masterToIndustry),
+    ind_junior_from_phd: Math.round(phdGraduates * rates.phdToIndustry),
+    gov_junior_from_bachelor: Math.round((bachelorGraduates - masterEntrants) * rates.bachelorToGov),
+    gov_junior_from_master: Math.round(masterGraduates * (1 - rates.phdEnrollment) * rates.masterToGov),
+    res_junior: Math.round(phdGraduates * rates.phdToResearch),
+    _stats: { declineFactor, currentYear, pop18: Math.round(pop18), universityEntrants: Math.round(universityEntrants),
+              bachelorGraduates: Math.round(bachelorGraduates), masterGraduates: Math.round(masterGraduates), phdGraduates: Math.round(phdGraduates) }
+  };
+}
+
+function calculateNationalCapability(cohorts) {
+  const capability = {};
+  CAPABILITY_AXES.forEach(axis => {
+    let weightedSum = 0, totalWeight = 0;
+    cohorts.forEach(c => {
+      const skill = c.skills[axis.key] || 50;
+      weightedSum += Math.pow(skill, 0.8) * c.count;
+      totalWeight += c.count;
+    });
+    const cesValue = Math.pow(weightedSum / totalWeight, 1/0.8);
+    capability[axis.key] = Math.min(100, Math.max(0, cesValue));
+  });
+  return capability;
+}
+
+function standardize(value, mean, std) { return std === 0 ? 50 : 50 + 10 * ((value - mean) / std); }
+
+function calculateNormalized(capability) {
+  const norm = {};
+  CAPABILITY_AXES.forEach(axis => {
+    norm[axis.key] = standardize(capability[axis.key], 55, 15);
+  });
+  return norm;
+}
+
+function calculateSuccessionScore(cohorts) {
+  const sectorScores = {};
+  Object.keys(SECTORS).forEach(sector => {
+    const sc = cohorts.filter(c => c.sector === sector);
+    if (sc.length === 0) { sectorScores[sector] = 0; return; }
+    const ages = sc.map(c => c.avgAge);
+    const ageScore = Math.min(40, Math.max(...ages) - Math.min(...ages)) / 40 * 100;
+    const tenureMargin = sc.reduce((s, c) => s + (c.maxTenure - c.avgTenure) / c.maxTenure * c.count, 0) / sc.reduce((s, c) => s + c.count, 0);
+    const tenureScore = tenureMargin * 100;
+    const totalCount = sc.reduce((s, c) => s + c.count, 0);
+    const seniorCount = sc.filter(c => c.role.includes('シニア') || c.role.includes('教授') || c.role.includes('幹部')).reduce((s, c) => s + c.count, 0);
+    const mentorScore = Math.min(100, (seniorCount / totalCount) * 300);
+    sectorScores[sector] = ageScore * 0.3 + tenureScore * 0.4 + mentorScore * 0.3;
+  });
+  return { total: Object.values(sectorScores).reduce((a, b) => a + b, 0) / 4, bySector: sectorScores };
+}
+
+function calculateTotalScore(capability) {
+  const values = Object.values(capability);
+  return values.reduce((a, b) => a + b, 0) / values.length * 0.6 + Math.min(...values) * 0.4;
+}
+
+function getTotalTalent() { return state.cohorts.reduce((s, c) => s + c.count, 0); }
+
+function getSectorCounts() {
+  const counts = {};
+  Object.keys(SECTORS).forEach(s => { counts[s] = state.cohorts.filter(c => c.sector === s).reduce((sum, c) => sum + c.count, 0); });
+  return counts;
+}
+
+// ============ シミュレーション ============
+function simulateYear() {
+  const customRates = {
+    masterEnrollment: state.popParams.masterEnrollment / 100,
+    phdEnrollment: state.popParams.phdEnrollment / 100,
+    phdToAcademia: state.popParams.phdToAcademia / 100,
+  };
+  const inflow = calculateAnnualInflow(state.year, POPULATION_STATS, customRates);
+  
+  // 成長
+  state.cohorts = state.cohorts.map(cohort => {
+    const newCohort = { ...cohort, skills: { ...cohort.skills }, avgTenure: cohort.avgTenure + 1, avgAge: cohort.avgAge + 1 };
+    const sectorInv = state.investments[cohort.sector] / 100;
+    
+    Object.keys(newCohort.skills).forEach(key => {
+      let growth = 0;
+      if (cohort.sector === 'university' && ['basicScience', 'education', 'innovation'].includes(key)) growth = sectorInv * 2.5;
+      else if (cohort.sector === 'industry' && ['appliedTech', 'manufacturing', 'digitalAI', 'implementation'].includes(key)) growth = sectorInv * 3;
+      else if (cohort.sector === 'government' && ['policyMaking', 'finance', 'implementation'].includes(key)) growth = sectorInv * 2;
+      else if (cohort.sector === 'research' && ['basicScience', 'globalCompete', 'innovation', 'energy'].includes(key)) growth = sectorInv * 2.5;
+      if (key === 'succession') growth = cohort.avgTenure * 0.3;
+      const decay = key === 'digitalAI' ? 1.5 : 0.3;
+      newCohort.skills[key] = Math.max(0, Math.min(100, newCohort.skills[key] + growth - decay + (Math.random() - 0.5)));
+    });
+    return newCohort;
+  });
+  
+  // 遷移
+  const flowChanges = {};
+  state.cohorts.forEach(cohort => {
+    const trans = TRANSITION_MATRIX[cohort.id];
+    if (!trans) return;
+    Object.entries(trans).forEach(([targetId, rate]) => {
+      const flowCount = Math.floor(cohort.count * rate * (0.9 + Math.random() * 0.2));
+      if (targetId === 'exit' || targetId === 'retire') {
+        flowChanges[cohort.id] = (flowChanges[cohort.id] || 0) - flowCount;
+      } else {
+        flowChanges[cohort.id] = (flowChanges[cohort.id] || 0) - flowCount;
+        flowChanges[targetId] = (flowChanges[targetId] || 0) + flowCount;
+      }
+    });
+  });
+  
+  // 流入
+  flowChanges['master_student'] = (flowChanges['master_student'] || 0) + inflow.master_student;
+  flowChanges['phd_student'] = (flowChanges['phd_student'] || 0) + inflow.phd_student;
+  flowChanges['assist_prof'] = (flowChanges['assist_prof'] || 0) + inflow.assist_prof;
+  flowChanges['ind_junior'] = (flowChanges['ind_junior'] || 0) + inflow.ind_junior_from_bachelor + inflow.ind_junior_from_master + inflow.ind_junior_from_phd;
+  flowChanges['gov_junior'] = (flowChanges['gov_junior'] || 0) + inflow.gov_junior_from_bachelor + inflow.gov_junior_from_master;
+  flowChanges['res_junior'] = (flowChanges['res_junior'] || 0) + inflow.res_junior;
+  
+  state.cohorts = state.cohorts.map(c => ({ ...c, count: Math.max(100, c.count + (flowChanges[c.id] || 0)) }));
+  
+  state.inflowHistory.push({
+    year: state.year + 1,
+    masterInflow: inflow.master_student,
+    industryInflow: inflow.ind_junior_from_bachelor + inflow.ind_junior_from_master + inflow.ind_junior_from_phd,
+    govInflow: inflow.gov_junior_from_bachelor + inflow.gov_junior_from_master,
+  });
+  
+  state.year += 1;
+  
+  const capRaw = calculateNationalCapability(state.cohorts);
+  const capNorm = calculateNormalized(capRaw);
+  const succession = calculateSuccessionScore(state.cohorts);
+  
+  state.history.push({
+    year: state.year,
+    rawScore: calculateTotalScore(capRaw),
+    normScore: calculateTotalScore(capNorm),
+    succession: succession.total,
+    totalTalent: getTotalTalent(),
+  });
+  
+  updateUI();
+}
+
+// ============ UI更新 ============
+function updateUI() {
+  const capRaw = calculateNationalCapability(state.cohorts);
+  const capNorm = calculateNormalized(capRaw);
+  const capability = state.viewMode === 'normalized' ? capNorm : capRaw;
+  const succession = calculateSuccessionScore(state.cohorts);
+  const totalTalent = getTotalTalent();
+  const customRates = {
+    masterEnrollment: state.popParams.masterEnrollment / 100,
+    phdEnrollment: state.popParams.phdEnrollment / 100,
+    phdToAcademia: state.popParams.phdToAcademia / 100,
+  };
+  const inflow = calculateAnnualInflow(state.year, POPULATION_STATS, customRates);
+  
+  document.getElementById('subtitle').textContent = `人口統計連動 | ${POPULATION_STATS.baseYear + state.year}年 | ${(totalTalent/10000).toFixed(1)}万人`;
+  document.getElementById('year-display').textContent = POPULATION_STATS.baseYear + state.year;
+  document.getElementById('talent-display').textContent = `${(totalTalent/10000).toFixed(1)}万`;
+  document.getElementById('raw-score').textContent = calculateTotalScore(capRaw).toFixed(0);
+  document.getElementById('norm-score').textContent = calculateTotalScore(capNorm).toFixed(0);
+  document.getElementById('pop-factor').textContent = `${(inflow._stats.declineFactor * 100).toFixed(0)}%`;
+  
+  document.getElementById('pop18').textContent = `${(inflow._stats.pop18 / 10000).toFixed(1)}万人`;
+  document.getElementById('pop18-detail').textContent = `基準: ${POPULATION_STATS.agePopulation.age18}万 × ${(inflow._stats.declineFactor * 100).toFixed(0)}%`;
+  document.getElementById('uni-entrants').textContent = `${(inflow._stats.universityEntrants / 10000).toFixed(1)}万人`;
+  document.getElementById('master-inflow').textContent = `${(inflow.master_student / 1000).toFixed(1)}千人`;
+  document.getElementById('phd-graduates').textContent = `${(inflow._stats.phdGraduates / 1000).toFixed(1)}千人`;
+  
+  // セクター別流入
+  const sectorInflowData = [
+    { label: '🎓 大学', value: inflow.master_student + inflow.phd_student, color: 'text-purple-400' },
+    { label: '🏭 産業界', value: inflow.ind_junior_from_bachelor + inflow.ind_junior_from_master + inflow.ind_junior_from_phd, color: 'text-blue-400' },
+    { label: '🏛️ 政府', value: inflow.gov_junior_from_bachelor + inflow.gov_junior_from_master, color: 'text-green-400' },
+    { label: '🔬 研究', value: inflow.res_junior, color: 'text-orange-400' },
+  ];
+  document.getElementById('sector-inflow').innerHTML = sectorInflowData.map(s => `
+    <div class="bg-gray-600 rounded p-2 text-center">
+      <div class="text-xs text-gray-300">${s.label} 年間流入</div>
+      <div class="text-sm font-bold ${s.color}">${s.value > 10000 ? (s.value/10000).toFixed(1) + '万' : (s.value/1000).toFixed(1) + '千'}人</div>
+    </div>
+  `).join('');
+  
+  // 継承性バー
+  document.getElementById('succession-bars').innerHTML = Object.entries(succession.bySector).map(([key, score]) => `
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-xs w-14">${SECTORS[key]?.icon} ${SECTORS[key]?.name}</span>
+      <div class="flex-1 bg-gray-600 rounded-full h-2">
+        <div class="h-2 rounded-full ${score > 60 ? 'bg-green-500' : score > 40 ? 'bg-yellow-500' : 'bg-red-500'}" style="width: ${score}%"></div>
+      </div>
+      <span class="text-xs w-6">${score.toFixed(0)}</span>
+    </div>
+  `).join('');
+  
+  updateCharts(capability, succession, inflow);
+}
+
+function updateCharts(capability, succession, inflow) {
+  const labels = CAPABILITY_AXES.map(a => a.short);
+  const domain = state.viewMode === 'normalized' ? { min: 20, max: 80 } : { min: 0, max: 100 };
+  
+  // 現在レーダー
+  currentRadarChart.data.labels = labels;
+  currentRadarChart.data.datasets[0].data = CAPABILITY_AXES.map(a => capability[a.key]);
+  currentRadarChart.options.scales.r.min = domain.min;
+  currentRadarChart.options.scales.r.max = domain.max;
+  currentRadarChart.update();
+  
+  // 将来レーダー
+  const future5 = predictFuture(5, capability);
+  const future10 = predictFuture(10, capability);
+  futureRadarChart.data.labels = labels;
+  futureRadarChart.data.datasets[0].data = CAPABILITY_AXES.map(a => capability[a.key]);
+  futureRadarChart.data.datasets[1].data = CAPABILITY_AXES.map(a => future5[a.key]);
+  futureRadarChart.data.datasets[2].data = CAPABILITY_AXES.map(a => future10[a.key]);
+  futureRadarChart.options.scales.r.min = domain.min;
+  futureRadarChart.options.scales.r.max = domain.max;
+  futureRadarChart.update();
+  
+  // セクター
+  const sectorCounts = getSectorCounts();
+  sectorChart.data.labels = Object.values(SECTORS).map(s => s.name);
+  sectorChart.data.datasets[0].data = Object.keys(SECTORS).map(k => sectorCounts[k]);
+  sectorChart.update();
+  
+  // 履歴
+  historyChart.data.labels = state.history.map(h => POPULATION_STATS.baseYear + h.year);
+  historyChart.data.datasets[0].data = state.history.map(h => h.normScore);
+  historyChart.data.datasets[1].data = state.history.map(h => h.succession);
+  historyChart.data.datasets[2].data = state.history.map(h => h.totalTalent / 10000);
+  historyChart.update();
+  
+  // 流入ミニ
+  if (state.inflowHistory.length > 0) {
+    inflowMiniChart.data.labels = state.inflowHistory.map(h => h.year);
+    inflowMiniChart.data.datasets[0].data = state.inflowHistory.map(h => h.industryInflow);
+    inflowMiniChart.data.datasets[1].data = state.inflowHistory.map(h => h.masterInflow);
+    inflowMiniChart.data.datasets[2].data = state.inflowHistory.map(h => h.govInflow);
+    inflowMiniChart.update();
+  }
+  
+  updateInvTotal();
+}
+
+function predictFuture(years, capability) {
+  const recent = state.history.slice(-5);
+  if (recent.length < 2) return capability;
+  const prediction = {};
+  CAPABILITY_AXES.forEach(axis => {
+    const trend = (state.history.length > 1) ? 
+      ((state.history[state.history.length - 1]?.normScore || 50) - (state.history[0]?.normScore || 50)) / state.history.length * 0.1 : 0;
+    prediction[axis.key] = Math.max(0, Math.min(100, capability[axis.key] + trend * years));
+  });
+  return prediction;
+}
+
+function updateInvTotal() {
+  const total = Object.values(state.investments).reduce((a, b) => a + b, 0);
+  const el = document.getElementById('inv-total');
+  el.textContent = `${total}%`;
+  el.className = total === 100 ? 'text-green-400' : 'text-red-400';
+}
+
+// ============ 初期化 ============
+function initCharts() {
+  const radarOpts = {
+    responsive: true,
+    scales: {
+      r: { min: 0, max: 100, ticks: { color: '#666', font: { size: 8 } }, grid: { color: '#444' }, angleLines: { color: '#444' }, pointLabels: { color: '#aaa', font: { size: 9 } } }
+    },
+    plugins: { legend: { labels: { color: '#ccc', font: { size: 10 } } } }
+  };
+  
+  currentRadarChart = new Chart(document.getElementById('current-radar'), {
+    type: 'radar',
+    data: { labels: [], datasets: [{ label: '現在', data: [], borderColor: '#00ffff', backgroundColor: '#00ffff30', borderWidth: 2 }] },
+    options: radarOpts
+  });
+  
+  futureRadarChart = new Chart(document.getElementById('future-radar'), {
+    type: 'radar',
+    data: { labels: [], datasets: [
+      { label: '現在', data: [], borderColor: '#00ffff', backgroundColor: '#00ffff15', borderWidth: 1 },
+      { label: '5年後', data: [], borderColor: '#ffd700', backgroundColor: '#ffd70020', borderWidth: 2 },
+      { label: '10年後', data: [], borderColor: '#ff4500', backgroundColor: '#ff450020', borderWidth: 2 }
+    ]},
+    options: radarOpts
+  });
+  
+  sectorChart = new Chart(document.getElementById('sector-chart'), {
+    type: 'bar',
+    data: { labels: [], datasets: [{ label: '人員', data: [], backgroundColor: '#3b82f6' }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      scales: { x: { ticks: { color: '#888' }, grid: { color: '#444' } }, y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { display: false } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${(ctx.raw/10000).toFixed(1)}万人` } } }
+    }
+  });
+  
+  historyChart = new Chart(document.getElementById('history-chart'), {
+    type: 'line',
+    data: { labels: [], datasets: [
+      { label: '国力(偏差値)', data: [], borderColor: '#00ffff', borderWidth: 2, pointRadius: 0, yAxisID: 'y' },
+      { label: '継承性', data: [], borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, yAxisID: 'y' },
+      { label: '総人材(万)', data: [], borderColor: '#8b5cf6', backgroundColor: '#8b5cf620', borderWidth: 1, pointRadius: 0, fill: true, yAxisID: 'y1' }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#888' }, grid: { color: '#444' } },
+        y: { type: 'linear', position: 'left', min: 0, max: 100, ticks: { color: '#888' }, grid: { color: '#444' } },
+        y1: { type: 'linear', position: 'right', ticks: { color: '#888' }, grid: { display: false } }
+      },
+      plugins: { legend: { labels: { color: '#ccc', font: { size: 10 } } } }
+    }
+  });
+  
+  inflowMiniChart = new Chart(document.getElementById('inflow-mini'), {
+    type: 'line',
+    data: { labels: [], datasets: [
+      { label: '産業界', data: [], borderColor: '#3b82f6', backgroundColor: '#3b82f660', fill: true, pointRadius: 0 },
+      { label: '修士', data: [], borderColor: '#8b5cf6', backgroundColor: '#8b5cf660', fill: true, pointRadius: 0 },
+      { label: '政府', data: [], borderColor: '#10b981', backgroundColor: '#10b98160', fill: true, pointRadius: 0 }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: false } }, plugins: { legend: { display: false } } }
+  });
+}
+
+function initControls() {
+  document.getElementById('investment-controls').innerHTML = Object.entries(SECTORS).map(([key, s]) => `
+    <div class="mb-2">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-sm">${s.icon} ${s.name}</span>
+        <span class="text-yellow-400 font-bold" id="inv-${key}-val">${state.investments[key]}%</span>
+      </div>
+      <input type="range" min="0" max="100" value="${state.investments[key]}" class="w-full h-1.5" oninput="updateInv('${key}', this.value)">
+    </div>
+  `).join('');
+  
+  // 進学率スライダー
+  document.getElementById('master-rate').addEventListener('input', (e) => {
+    state.popParams.masterEnrollment = parseFloat(e.target.value);
+    document.getElementById('master-rate-val').textContent = `${e.target.value}%`;
+  });
+  document.getElementById('phd-rate').addEventListener('input', (e) => {
+    state.popParams.phdEnrollment = parseFloat(e.target.value);
+    document.getElementById('phd-rate-val').textContent = `${e.target.value}%`;
+  });
+  document.getElementById('phd-academia').addEventListener('input', (e) => {
+    state.popParams.phdToAcademia = parseFloat(e.target.value);
+    document.getElementById('phd-academia-val').textContent = `${e.target.value}%`;
+  });
+}
+
+function updateInv(key, value) {
+  state.investments[key] = parseInt(value);
+  document.getElementById(`inv-${key}-val`).textContent = `${value}%`;
+  updateInvTotal();
+}
+
+function resetSimulation() {
+  state = {
+    year: 0,
+    cohorts: createInitialCohorts(),
+    history: [],
+    inflowHistory: [],
+    isSimulating: false,
+    viewMode: state.viewMode,
+    investments: { university: 30, industry: 35, government: 15, research: 20 },
+    popParams: { masterEnrollment: 12, phdEnrollment: 10, phdToAcademia: 18 },
+  };
+  initControls();
+  document.getElementById('master-rate').value = 12;
+  document.getElementById('phd-rate').value = 10;
+  document.getElementById('phd-academia').value = 18;
+  document.getElementById('master-rate-val').textContent = '12%';
+  document.getElementById('phd-rate-val').textContent = '10%';
+  document.getElementById('phd-academia-val').textContent = '18%';
+  updateUI();
+  
+  document.getElementById('btn-auto').textContent = '⏩ 自動実行';
+  document.getElementById('btn-auto').classList.remove('bg-red-600', 'hover:bg-red-700');
+  document.getElementById('btn-auto').classList.add('bg-green-600', 'hover:bg-green-700');
+}
+
+let autoInterval = null;
+
+function toggleAuto() {
+  state.isSimulating = !state.isSimulating;
+  const btn = document.getElementById('btn-auto');
+  if (state.isSimulating) {
+    btn.textContent = '⏸️ 停止';
+    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+    btn.classList.add('bg-red-600', 'hover:bg-red-700');
+    autoInterval = setInterval(() => {
+      if (state.year >= 30) { toggleAuto(); return; }
+      simulateYear();
+    }, 600);
+  } else {
+    btn.textContent = '⏩ 自動実行';
+    btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+    btn.classList.add('bg-green-600', 'hover:bg-green-700');
+    if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+  }
+}
+
+// イベント
+document.getElementById('btn-step').addEventListener('click', simulateYear);
+document.getElementById('btn-auto').addEventListener('click', toggleAuto);
+document.getElementById('btn-reset').addEventListener('click', resetSimulation);
+document.getElementById('view-toggle').addEventListener('click', () => {
+  state.viewMode = state.viewMode === 'normalized' ? 'raw' : 'normalized';
+  const btn = document.getElementById('view-toggle');
+  btn.textContent = state.viewMode === 'normalized' ? '偏差値' : '実値';
+  btn.className = `text-xs px-2 py-1 rounded ${state.viewMode === 'normalized' ? 'bg-purple-600' : 'bg-blue-600'}`;
+  updateUI();
+});
+
+// 起動
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  initControls();
+  updateUI();
+});
+</script>
+</body>
+</html>

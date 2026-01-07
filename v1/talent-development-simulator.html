@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国家人材育成シミュレーター</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #111827; color: white; }
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 8px;
+      background: #374151;
+      border-radius: 4px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4">
+  <h1 class="text-3xl font-bold text-center mb-2 text-cyan-400">🌏 国家人材育成シミュレーター</h1>
+  <p class="text-center text-gray-400 mb-4">Human Capital Development Optimization Game</p>
+
+  <!-- ステータスバー -->
+  <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="bg-gray-800 rounded-lg p-4 text-center">
+      <div class="text-2xl font-bold text-yellow-400" id="year-display">0年目</div>
+      <div class="text-gray-400 text-sm">経過年数</div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-4 text-center">
+      <div class="text-2xl font-bold text-green-400" id="budget-display">1000</div>
+      <div class="text-gray-400 text-sm">予算残高</div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-4 text-center">
+      <div class="text-2xl font-bold text-blue-400" id="score-display">0</div>
+      <div class="text-gray-400 text-sm">総合国力スコア</div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-4 text-center">
+      <div class="text-2xl font-bold text-purple-400" id="achievement-display">0%</div>
+      <div class="text-gray-400 text-sm">目標達成度</div>
+    </div>
+  </div>
+
+  <!-- レーダーチャート -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-xl font-bold mb-4 text-cyan-300">📊 現在の国力プロファイル</h2>
+      <canvas id="current-radar"></canvas>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-xl font-bold mb-4 text-orange-300">🔮 将来予測（5年後・10年後）</h2>
+      <canvas id="future-radar"></canvas>
+    </div>
+  </div>
+
+  <!-- 投資配分 -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-xl font-bold mb-4 text-green-300">💰 投資配分 (セクター別)</h2>
+      <div id="investment-controls"></div>
+      <div class="text-right mt-4">
+        <span id="investment-total" class="font-bold text-green-400">合計: 100%</span>
+      </div>
+    </div>
+    <div class="bg-gray-800 rounded-lg p-4">
+      <h2 class="text-xl font-bold mb-4 text-purple-300">👥 人材配分 (大学→各セクター)</h2>
+      <div id="talent-controls"></div>
+      <div class="text-right mt-4">
+        <span id="talent-total" class="font-bold text-green-400">合計: 100%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 時系列グラフ -->
+  <div class="bg-gray-800 rounded-lg p-4 mt-6">
+    <h2 class="text-xl font-bold mb-4 text-yellow-300">📈 国力推移（時系列）</h2>
+    <div style="height: 300px;"><canvas id="history-chart"></canvas></div>
+  </div>
+
+  <!-- 能力値詳細 -->
+  <div class="bg-gray-800 rounded-lg p-4 mt-6">
+    <h2 class="text-xl font-bold mb-4 text-pink-300">📋 能力値詳細</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" id="capability-details"></div>
+  </div>
+
+  <!-- コントロールボタン -->
+  <div class="flex justify-center gap-4 mt-6 mb-8">
+    <button id="btn-step" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition">▶️ 1年進める</button>
+    <button id="btn-auto" class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition">⏩ 自動シミュレーション</button>
+    <button id="btn-reset" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-bold transition">🔄 リセット</button>
+  </div>
+
+  <!-- 数理モデル説明 -->
+  <div class="bg-gray-800 rounded-lg p-4 mt-6">
+    <h2 class="text-xl font-bold mb-4 text-cyan-300">📐 数理モデル概要</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+      <div>
+        <h3 class="font-bold text-white mb-2">国力集約関数</h3>
+        <p class="font-mono bg-gray-900 p-2 rounded text-xs">S_j(t) = (Σ s_i,j^α)^(1/α) × Π(1 - e^(-βs_k,j))</p>
+        <p class="mt-2">α &lt; 1 で補完性、キーパーソン欠損で急激な低下</p>
+      </div>
+      <div>
+        <h3 class="font-bold text-white mb-2">目標達成度（コサイン類似度）</h3>
+        <p class="font-mono bg-gray-900 p-2 rounded text-xs">Achievement = (S·S_target) / (|S||S_target|) × 100%</p>
+        <p class="mt-2">ベクトル方向の一致度で評価</p>
+      </div>
+      <div>
+        <h3 class="font-bold text-white mb-2">成長モデル</h3>
+        <p class="font-mono bg-gray-900 p-2 rounded text-xs">ds/dt = η×T + γ×W + Σ(M×δ×s) - μ×s</p>
+        <p class="mt-2">育成 + OJT + メンタリング - 陳腐化</p>
+      </div>
+      <div>
+        <h3 class="font-bold text-white mb-2">最適化目的関数</h3>
+        <p class="font-mono bg-gray-900 p-2 rounded text-xs">min J = ∫[w₁‖S-S_target‖² + w₂ΣI + w₃Var + w₄Risk]dt</p>
+        <p class="mt-2">目標乖離 + コスト + バランス + リスク</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+// 定数
+const CAPABILITY_AXES = [
+  { key: 'basicScience', name: '基礎科学' },
+  { key: 'appliedTech', name: '応用技術' },
+  { key: 'digitalAI', name: 'デジタル・AI' },
+  { key: 'manufacturing', name: '製造・ものづくり' },
+  { key: 'finance', name: '金融・経済' },
+  { key: 'healthcare', name: '医療・ヘルスケア' },
+  { key: 'energy', name: 'エネルギー・環境' },
+  { key: 'globalCompete', name: '国際競争力' },
+  { key: 'innovation', name: 'イノベーション' },
+  { key: 'education', name: '教育基盤' },
+  { key: 'policyMaking', name: '政策立案' },
+  { key: 'implementation', name: '社会実装力' },
+];
+
+const initialCapability = {
+  basicScience: 70, appliedTech: 65, digitalAI: 55, manufacturing: 75,
+  finance: 60, healthcare: 70, energy: 50, globalCompete: 45,
+  innovation: 50, education: 65, policyMaking: 55, implementation: 60,
+};
+
+const targetCapability = {
+  basicScience: 85, appliedTech: 85, digitalAI: 90, manufacturing: 80,
+  finance: 75, healthcare: 85, energy: 80, globalCompete: 75,
+  innovation: 85, education: 80, policyMaking: 70, implementation: 80,
+};
+
+const SECTORS = {
+  university: { name: '大学・研究機関', icon: '🎓', desc: '基礎研究・人材育成の土台' },
+  industry: { name: '産業界', icon: '🏭', desc: '経験的技術・実践知の蓄積' },
+  government: { name: '政府・政策', icon: '🏛️', desc: '投資配分・制度設計' },
+  research: { name: '外部研究者', icon: '🔬', desc: '高度専門知識・国際連携' },
+};
+
+// 状態
+let state = {
+  year: 0,
+  budget: 1000,
+  capability: JSON.parse(JSON.stringify(initialCapability)),
+  history: [],
+  isSimulating: false,
+  investments: { university: 30, industry: 35, government: 15, research: 20 },
+  talentAllocation: { toIndustry: 50, toGovernment: 20, toResearch: 30 },
+  keyPersonRisk: {},
+};
+
+// チャート
+let currentRadarChart, futureRadarChart, historyChart;
+
+// 計算関数
+function calculateScore(cap) {
+  const values = Object.values(cap);
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const min = Math.min(...values);
+  return Math.round(avg * 0.6 + min * 0.4);
+}
+
+function calculateAchievement(cap) {
+  let dot = 0, normCap = 0, normTarget = 0;
+  CAPABILITY_AXES.forEach(axis => {
+    dot += cap[axis.key] * targetCapability[axis.key];
+    normCap += cap[axis.key] ** 2;
+    normTarget += targetCapability[axis.key] ** 2;
+  });
+  return (dot / (Math.sqrt(normCap) * Math.sqrt(normTarget)) * 100).toFixed(1);
+}
+
+function predictFuture(years) {
+  const recent = state.history.slice(-3);
+  if (recent.length < 2) return state.capability;
+  const prediction = {};
+  CAPABILITY_AXES.forEach(axis => {
+    const values = recent.map(h => h[axis.key] || 0);
+    const trend = (values[values.length - 1] - values[0]) / values.length;
+    prediction[axis.key] = Math.max(0, Math.min(100, state.capability[axis.key] + trend * years));
+  });
+  return prediction;
+}
+
+// シミュレーション
+function simulateYear() {
+  const inv = state.investments;
+  const tal = state.talentAllocation;
+  const cap = state.capability;
+  
+  // 大学効果
+  const uniEffect = inv.university / 100;
+  cap.basicScience += uniEffect * 3 * (1 + tal.toResearch / 100);
+  cap.education += uniEffect * 2;
+  cap.innovation += uniEffect * 1.5;
+  
+  // 産業界効果
+  const indEffect = inv.industry / 100;
+  cap.appliedTech += indEffect * 3;
+  cap.manufacturing += indEffect * 2.5;
+  cap.digitalAI += indEffect * 2;
+  cap.implementation += indEffect * 2;
+  
+  // 政府効果
+  const govEffect = inv.government / 100;
+  cap.policyMaking += govEffect * 2;
+  cap.finance += govEffect * 1.5;
+  
+  // 研究効果
+  const resEffect = inv.research / 100;
+  cap.globalCompete += resEffect * 3;
+  cap.healthcare += resEffect * 2;
+  cap.energy += resEffect * 2;
+  
+  // シナジー
+  const synergy = (tal.toIndustry * tal.toResearch) / 10000;
+  cap.innovation += synergy * 1.5;
+  cap.implementation += synergy * 1;
+  
+  // 陳腐化 & クリップ
+  Object.keys(cap).forEach(key => {
+    cap[key] = Math.max(0, Math.min(100, cap[key] - 1 + Math.random() * 0.5));
+    state.keyPersonRisk[key] = cap[key] > 80 ? 'high' : cap[key] > 60 ? 'medium' : 'low';
+  });
+  
+  // 予算
+  const income = calculateScore(cap) * 2;
+  const totalInv = Object.values(inv).reduce((a, b) => a + b, 0);
+  state.budget = Math.max(0, state.budget + income - totalInv * 3);
+  
+  state.year += 1;
+  state.history.push({ year: state.year, ...cap, totalScore: calculateScore(cap) });
+  
+  updateUI();
+}
+
+// UI更新
+function updateUI() {
+  document.getElementById('year-display').textContent = `${state.year}年目`;
+  document.getElementById('budget-display').textContent = state.budget.toFixed(0);
+  document.getElementById('score-display').textContent = calculateScore(state.capability);
+  document.getElementById('achievement-display').textContent = `${calculateAchievement(state.capability)}%`;
+  
+  updateRadars();
+  updateHistoryChart();
+  updateCapabilityDetails();
+  updateTotals();
+}
+
+function updateRadars() {
+  const labels = CAPABILITY_AXES.map(a => a.name);
+  const current = CAPABILITY_AXES.map(a => state.capability[a.key]);
+  const target = CAPABILITY_AXES.map(a => targetCapability[a.key]);
+  const initial = CAPABILITY_AXES.map(a => initialCapability[a.key]);
+  
+  currentRadarChart.data.labels = labels;
+  currentRadarChart.data.datasets[0].data = current;
+  currentRadarChart.data.datasets[1].data = target;
+  currentRadarChart.data.datasets[2].data = initial;
+  currentRadarChart.update();
+  
+  const future5 = predictFuture(5);
+  const future10 = predictFuture(10);
+  
+  futureRadarChart.data.labels = labels;
+  futureRadarChart.data.datasets[0].data = current;
+  futureRadarChart.data.datasets[1].data = CAPABILITY_AXES.map(a => future5[a.key]);
+  futureRadarChart.data.datasets[2].data = CAPABILITY_AXES.map(a => future10[a.key]);
+  futureRadarChart.data.datasets[3].data = target;
+  futureRadarChart.update();
+}
+
+function updateHistoryChart() {
+  historyChart.data.labels = state.history.map(h => h.year);
+  historyChart.data.datasets[0].data = state.history.map(h => h.totalScore);
+  historyChart.data.datasets[1].data = state.history.map(h => h.basicScience);
+  historyChart.data.datasets[2].data = state.history.map(h => h.digitalAI);
+  historyChart.data.datasets[3].data = state.history.map(h => h.innovation);
+  historyChart.update();
+}
+
+function updateCapabilityDetails() {
+  const container = document.getElementById('capability-details');
+  container.innerHTML = CAPABILITY_AXES.map(axis => {
+    const current = state.capability[axis.key];
+    const target = targetCapability[axis.key];
+    const gap = target - current;
+    const risk = state.keyPersonRisk[axis.key];
+    const color = current >= target ? '#4ade80' : current >= target * 0.8 ? '#fbbf24' : '#f87171';
+    
+    return `
+      <div class="bg-gray-700 rounded p-3">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-medium">${axis.name}</span>
+          ${risk === 'high' ? '<span class="text-red-400 text-xs">⚠️ 高依存</span>' : ''}
+        </div>
+        <div class="text-2xl font-bold" style="color: ${color}">${current.toFixed(1)}</div>
+        <div class="text-xs text-gray-400">目標: ${target} (${gap > 0 ? '-' + gap.toFixed(1) : '+' + Math.abs(gap).toFixed(1)})</div>
+        <div class="w-full bg-gray-600 rounded-full h-2 mt-2">
+          <div class="h-2 rounded-full" style="width: ${Math.min(100, (current / target) * 100)}%; background: ${color}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateTotals() {
+  const invTotal = Object.values(state.investments).reduce((a, b) => a + b, 0);
+  const talTotal = Object.values(state.talentAllocation).reduce((a, b) => a + b, 0);
+  
+  const invEl = document.getElementById('investment-total');
+  invEl.textContent = `合計: ${invTotal}%`;
+  invEl.className = `font-bold ${invTotal === 100 ? 'text-green-400' : 'text-red-400'}`;
+  
+  const talEl = document.getElementById('talent-total');
+  talEl.textContent = `合計: ${talTotal}%`;
+  talEl.className = `font-bold ${talTotal === 100 ? 'text-green-400' : 'text-red-400'}`;
+}
+
+// 初期化
+function initCharts() {
+  const radarOptions = {
+    responsive: true,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 100,
+        ticks: { color: '#666', font: { size: 9 } },
+        grid: { color: '#444' },
+        angleLines: { color: '#444' },
+        pointLabels: { color: '#aaa', font: { size: 10 } }
+      }
+    },
+    plugins: { legend: { labels: { color: '#ccc' } } }
+  };
+  
+  currentRadarChart = new Chart(document.getElementById('current-radar'), {
+    type: 'radar',
+    data: {
+      labels: CAPABILITY_AXES.map(a => a.name),
+      datasets: [
+        { label: '現在', data: [], borderColor: '#00ffff', backgroundColor: '#00ffff30', borderWidth: 2 },
+        { label: '目標', data: [], borderColor: '#ff6b6b', backgroundColor: '#ff6b6b10', borderWidth: 2, borderDash: [5, 5] },
+        { label: '初期', data: [], borderColor: '#888', backgroundColor: 'transparent', borderWidth: 1, borderDash: [3, 3] }
+      ]
+    },
+    options: radarOptions
+  });
+  
+  futureRadarChart = new Chart(document.getElementById('future-radar'), {
+    type: 'radar',
+    data: {
+      labels: CAPABILITY_AXES.map(a => a.name),
+      datasets: [
+        { label: '現在', data: [], borderColor: '#00ffff', backgroundColor: '#00ffff20', borderWidth: 1 },
+        { label: '5年後', data: [], borderColor: '#ffd700', backgroundColor: '#ffd70020', borderWidth: 2 },
+        { label: '10年後', data: [], borderColor: '#ff4500', backgroundColor: '#ff450020', borderWidth: 2 },
+        { label: '目標', data: [], borderColor: '#888', backgroundColor: 'transparent', borderWidth: 1, borderDash: [5, 5] }
+      ]
+    },
+    options: radarOptions
+  });
+  
+  historyChart = new Chart(document.getElementById('history-chart'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: '総合スコア', data: [], borderColor: '#00ffff', borderWidth: 3, pointRadius: 0 },
+        { label: '基礎科学', data: [], borderColor: '#8884d8', borderWidth: 1, pointRadius: 0 },
+        { label: 'デジタル・AI', data: [], borderColor: '#ffc658', borderWidth: 1, pointRadius: 0 },
+        { label: 'イノベーション', data: [], borderColor: '#82ca9d', borderWidth: 1, pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#888' }, grid: { color: '#444' } },
+        y: { min: 0, max: 100, ticks: { color: '#888' }, grid: { color: '#444' } }
+      },
+      plugins: { legend: { labels: { color: '#ccc' } } }
+    }
+  });
+}
+
+function initControls() {
+  // 投資配分
+  document.getElementById('investment-controls').innerHTML = Object.entries(SECTORS).map(([key, s]) => `
+    <div class="mb-4">
+      <div class="flex justify-between items-center mb-1">
+        <span>${s.icon} ${s.name}</span>
+        <span class="text-yellow-400 font-bold" id="inv-${key}-val">${state.investments[key]}%</span>
+      </div>
+      <input type="range" min="0" max="100" value="${state.investments[key]}"
+        class="w-full" oninput="updateInvestment('${key}', this.value)">
+      <p class="text-gray-500 text-xs mt-1">${s.desc}</p>
+    </div>
+  `).join('');
+  
+  // 人材配分
+  const talents = [
+    { key: 'toIndustry', icon: '🏭', name: '産業界', color: 'text-blue-400' },
+    { key: 'toGovernment', icon: '🏛️', name: '政府・官僚', color: 'text-green-400' },
+    { key: 'toResearch', icon: '🔬', name: '研究機関', color: 'text-purple-400' }
+  ];
+  
+  document.getElementById('talent-controls').innerHTML = talents.map(t => `
+    <div class="mb-4">
+      <div class="flex justify-between items-center mb-1">
+        <span>${t.icon} → ${t.name}</span>
+        <span class="${t.color} font-bold" id="tal-${t.key}-val">${state.talentAllocation[t.key]}%</span>
+      </div>
+      <input type="range" min="0" max="100" value="${state.talentAllocation[t.key]}"
+        class="w-full" oninput="updateTalent('${t.key}', this.value)">
+    </div>
+  `).join('');
+}
+
+function updateInvestment(key, value) {
+  state.investments[key] = parseInt(value);
+  document.getElementById(`inv-${key}-val`).textContent = `${value}%`;
+  updateTotals();
+}
+
+function updateTalent(key, value) {
+  state.talentAllocation[key] = parseInt(value);
+  document.getElementById(`tal-${key}-val`).textContent = `${value}%`;
+  updateTotals();
+}
+
+function resetSimulation() {
+  state = {
+    year: 0,
+    budget: 1000,
+    capability: JSON.parse(JSON.stringify(initialCapability)),
+    history: [{ year: 0, ...initialCapability, totalScore: calculateScore(initialCapability) }],
+    isSimulating: false,
+    investments: { university: 30, industry: 35, government: 15, research: 20 },
+    talentAllocation: { toIndustry: 50, toGovernment: 20, toResearch: 30 },
+    keyPersonRisk: {},
+  };
+  initControls();
+  updateUI();
+  
+  document.getElementById('btn-auto').textContent = '⏩ 自動シミュレーション';
+  document.getElementById('btn-auto').classList.remove('bg-red-600', 'hover:bg-red-700');
+  document.getElementById('btn-auto').classList.add('bg-green-600', 'hover:bg-green-700');
+}
+
+let autoInterval = null;
+
+function toggleAuto() {
+  state.isSimulating = !state.isSimulating;
+  const btn = document.getElementById('btn-auto');
+  
+  if (state.isSimulating) {
+    btn.textContent = '⏸️ 停止';
+    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+    btn.classList.add('bg-red-600', 'hover:bg-red-700');
+    autoInterval = setInterval(() => {
+      if (state.year >= 20) { toggleAuto(); return; }
+      simulateYear();
+    }, 500);
+  } else {
+    btn.textContent = '⏩ 自動シミュレーション';
+    btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+    btn.classList.add('bg-green-600', 'hover:bg-green-700');
+    if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+  }
+}
+
+// イベント
+document.getElementById('btn-step').addEventListener('click', simulateYear);
+document.getElementById('btn-auto').addEventListener('click', toggleAuto);
+document.getElementById('btn-reset').addEventListener('click', resetSimulation);
+
+// 起動
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  initControls();
+  state.history = [{ year: 0, ...initialCapability, totalScore: calculateScore(initialCapability) }];
+  updateUI();
+});
+</script>
+</body>
+</html>

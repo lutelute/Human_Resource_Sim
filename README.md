@@ -12,9 +12,9 @@
 > ✅ **修正完了**: GitHub Pages対応済み。全バージョンが正常に動作します！
 
 **各バージョン直接リンク:**
-- [v1 (基本版)](https://lutelute.github.io/Human_Resource_Sim/v1/) - 投資配分・レーダーチャート
+- [v1 (基本版)](https://lutelute.github.io/Human_Resource_Sim/v1/talent-development-simulator.html) - 投資配分・レーダーチャート
 - [v2 (個人モデル)](https://lutelute.github.io/Human_Resource_Sim/v2/talent-simulator-v2.html) - 人材追跡・技術継承性
-- [v3 (コホート版)](https://lutelute.github.io/Human_Resource_Sim/v3/) - 大規模シミュレーション・年齢分布
+- [v3 (コホート版)](https://lutelute.github.io/Human_Resource_Sim/v3/talent-simulator-v3-pop.html) - 大規模シミュレーション・年齢分布
 
 ---
 
@@ -139,9 +139,9 @@ python -m http.server 8000
 ```
 
 **各バージョンへの直接アクセス:**
-- v1 (基本版): `http://localhost:8000/v1/`
+- v1 (基本版): `http://localhost:8000/v1/talent-development-simulator.html`
 - v2 (個人モデル): `http://localhost:8000/v2/talent-simulator-v2.html`  
-- v3 (コホート版): `http://localhost:8000/v3/`
+- v3 (コホート版): `http://localhost:8000/v3/talent-simulator-v3-pop.html`
 
 ---
 
