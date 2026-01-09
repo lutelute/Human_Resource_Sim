@@ -28,3 +28,21 @@ temp/
 
 # Node modules (if using npm/yarn)
 node_modules/
+
+# Build outputs
+dist/
+packages/*/dist/
+
+# Turborepo
+.turbo/
+
+# pnpm
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local

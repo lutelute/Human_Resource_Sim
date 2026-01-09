@@ -13,7 +13,7 @@
 
 **各バージョン直接リンク:**
 - [v1 (基本版)](https://lutelute.github.io/Human_Resource_Sim/v1/talent-development-simulator.html) - 投資配分・レーダーチャート
-- [v2 (個人モデル)](https://lutelute.github.io/Human_Resource_Sim/v2/talent-simulator-v2.html) - 人材追跡・技術継承性
+- [v2 (個人モデル)](https://lutelute.github.io/Human_Resource_Sim/v2/) - 100人追跡・財政フロー・技術継承性
 - [v3 (コホート版)](https://lutelute.github.io/Human_Resource_Sim/v3/talent-simulator-v3-pop.html) - 大規模シミュレーション・年齢分布
 
 ---
@@ -65,11 +65,14 @@ talent-development-simulator/
 - CES型国力集約関数
 - 最適化問題の定式化
 
-### Version 2: 個人モデル
-- 個人プロファイル追跡
-- 技術継承性指標
+### Version 2: 個人モデル (v2.1)
+- **100人規模**の個人プロファイル追跡
+- 技術継承性指標・メンタリングシステム
+- **財政フローシステム** (収入・支出・予算残高)
+  - 産業セクターからの収入生成
+  - セクター投資による支出
 - セクター別在籍期間モデル
-- イベントシステム（退職・卒業）
+- イベントシステム（退職・卒業・転職）
 
 ### Version 3: 大規模シミュレーション
 - コホートモデル（46万人対応）
@@ -140,8 +143,14 @@ python -m http.server 8000
 
 **各バージョンへの直接アクセス:**
 - v1 (基本版): `http://localhost:8000/v1/talent-development-simulator.html`
-- v2 (個人モデル): `http://localhost:8000/v2/talent-simulator-v2.html`  
+- v2 (個人モデル): `http://localhost:8000/v2/` (Viteビルド版)
 - v3 (コホート版): `http://localhost:8000/v3/talent-simulator-v3-pop.html`
+
+**開発モード (pnpm):**
+```bash
+pnpm install
+pnpm --filter v2-app dev  # v2をローカル開発サーバーで起動
+```
 
 ---
 
